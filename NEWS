@@ -1,0 +1,55 @@
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+#                                       #
+# Changes/Updates to the catIrt Package #
+#                                       #
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
+****************************************
+* Changes to catIrt 0.2-1 (2012-07-03) *
+****************************************
+  o  The format of the catIrt input function was rewritten a bit.
+
+  o  Rather than putting everything as arguments into catSim,
+     modules (startCat, middleCat, termCat) were created so that the
+     package can be easily updated in the future.
+
+  o  A Sympson-Hetter addendum to the catIrt function was added, in the hope
+     of eventually writting a Sympson-Hetter function.
+
+  o  The simple version of the GLR stopping rule was added for classification
+     CAT rather than just the original SPRT method.
+
+  o  The confidence interval stopping rule was added for classification CAT.
+
+  o  The call was deleted to the output of catIrt because the process of updating
+     the function is too tedious to make it worth while.
+
+  o  Added an option for theta estimation from the full bank of items.  If
+     EAP was selected and failed to estimate theta (due to underflow),
+     full-test estimation proceeds using the BME method.
+
+
+****************************************
+* Changes to catIrt 0.1-1 (2011-04-02) *
+****************************************
+  o  Most of the functions were completely rewritten for speed.
+
+  o  summary.catIrt and plot.catIrt were rewritten, and print commands were 
+     added.
+
+  o  summary.catIrt and print.catIrt now can display each simulees CAT
+     progression.
+
+  o  S3 method FI was added to make the code clearer.
+
+  o  S3 classes "brm" and "grm" were added, and class "cat" was changed to 
+     class "catIrt."
+
+  o  The argument "int" was added to catIrt, and a tiny bit of code was 
+     rewritten so that cat.thet estimates could not exceed int on either side.
+
+  o  The call was added to the output of catIrt so that the update command
+     would work.
+
+  o  The eapSE command was added, and now catIrt gives the posterior
+     standard deviation if score = "EAP".
