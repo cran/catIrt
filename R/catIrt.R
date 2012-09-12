@@ -9,22 +9,29 @@
 
 catIrt <- function( params, mod = c("brm", "grm"),
                     resp      = NULL,
-                    thetas    = NULL,
-                    catStart  = list( init.thet = 0, step.size = 3,
-                                      select = c("random", "FI", "KL"),
-                                      at = c("theta", "bounds"),
-                                      n.select = 5,
+                    theta     = NULL,
+                    catStart  = list( n.start = 5, init.theta = 0,
+                                      select = c("UW-FI", "LW-FI", "PW-FI",
+                                                 "FP-KL", "VP-KL", "FI-KL", "VI-KL",
+                                                 "random"),
+                                      at = c("theta", "bounds"), delta = .1,
+                                      n.select = 1,
                                       score = c("fixed", "step", "random", "WLE", "BME", "EAP"),
-                                      n.it = 5, leave.after.MLE = FALSE ),
-                    catMiddle = list( select = c("random", "FI", "KL"),
-                                      at = c("theta", "bounds"),
-                                      n.select = 5,
-                                      score = c("MLE", "WLE", "BME", "EAP"), int = c(-6, 6),
+                                      step.size = 3, leave.after.MLE = FALSE ),
+                    catMiddle = list( select = c("UW-FI", "LW-FI", "PW-FI",
+                                                 "FP-KL", "VP-KL", "FI-KL", "VI-KL",
+                                                 "random"),
+                                      at = c("theta", "bounds"), delta = .1,
+                                      n.select = 1,
+                                      score = c("MLE", "WLE", "BME", "EAP"), range = c(-6, 6),
                                       expos = c("none", "SH") ),
-                    catTerm   = list( term  = c("fixed", "var", "class"),
+                    catTerm   = list( term  = c("fixed", "precision", "info", "class"),
                                       score = c("MLE", "WLE", "BME", "EAP"),
                                       n.min = 5, n.max = 50,
-                                      v.term = .25,
+                                      p.term = list(method   = c("threshold", "change"),
+                                                    crit     = .25),
+                                      i.term = list(method   = c("threshold", "change"), 
+                                                    crit     = 2),
                                       c.term = list(method   = c("SPRT", "GLR", "CI"),
                                                     bounds   = c(-1, 1),
                                                     categ    = c(0, 1, 2),
@@ -47,7 +54,7 @@ catIrt <- function( params, mod = c("brm", "grm"),
 ######################## BEGIN ARGUMENT CHECK SECTION #######################
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~#
-# ARGUMENT CHECKS (PART 1) # (INITIAL CHECKING OF: resp/params/thetas/mod)
+# ARGUMENT CHECKS (PART 1) # (INITIAL CHECKING OF: resp/params/theta/mod)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
 ## 1 ## (Make sure that the parameter matrix exists)
@@ -56,14 +63,14 @@ catIrt <- function( params, mod = c("brm", "grm"),
 
 
 ## 2 ## (Make sure that one of "resp" or "thetas" exists and is of appropriate dimension)
-  if( is.null(resp) & is.null(thetas) ){
-    stop( "need to include 'resp' and/or 'thetas'" )
+  if( is.null(resp) & is.null(theta) ){
+    stop( "need to include 'resp' and/or 'theta'" )
     
   } else if( !is.null(resp) & all(dim(resp)[2] != dim(params)[1]) ){
     stop( "the number of 'resp' columns must equal the number of 'params' rows" )
     
-  } else if( ( !is.null(resp) & !is.null(thetas) ) & all(dim(resp)[1] != length(thetas)) ){
-  	warning( "the number of 'resp' rows does not equal the length of 'thetas'" )
+  } else if( ( !is.null(resp) & !is.null(theta) ) & all(dim(resp)[1] != length(theta)) ){
+  	warning( "the number of 'resp' rows does not equal the length of 'theta'" )
 
   } # END ifelse STATEMENTS
 
@@ -122,11 +129,12 @@ catIrt <- function( params, mod = c("brm", "grm"),
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
 # Making sure the parameters are of a particular class:
-  params <- cbind(1:nrow(params), params)  # first column is item number
+  if( !all( round(params[ , 1]) != 1:nrow(params) ) )
+    params <- cbind(1:nrow(params), params)  # first column is item number
 
 # Building the response matrix and indicating its class:
   if( is.null(resp) ){
-    resp <- simIrt(thetas = thetas, params = params[ , -c(1, ncol(params))], mod = mod)$resp
+    resp <- simIrt(theta = theta, params = params[ , -c(1, ncol(params))], mod = mod)$resp
     
   } else{
   	class(resp) <- c(mod, "matrix")
@@ -156,7 +164,7 @@ catIrt <- function( params, mod = c("brm", "grm"),
 
 ## 2 ## (Make sure that the dimensions of params are correct)
     if( dim(params)[2] != 5 )
-      stop( "'params' must have three columns: a, b, and c" )
+      stop( "'params' must have three or four columns: item, a, b, and c" )
 
 ## 3 ## (Naming and classing the parameters)
     colnames(params) <- c("item", "a", "b", "c", "SH")
@@ -195,39 +203,54 @@ catIrt <- function( params, mod = c("brm", "grm"),
 ## I. FOR THE CATSTART LIST ##
 	
 ## LIST OF OPTIONS ##
-  sel.opt <- c("random", "FI", "KL")
+  sel.opt <- c("UW-FI", "LW-FI", "PW-FI", "FP-KL", "VP-KL", "FI-KL", "VI-KL", "random")
   at.opt  <- c("theta", "bounds")
   sco.opt <- c("fixed", "step", "random", "WLE", "BME", "EAP")
 
+## a) n.start ##     
+  if( {length(catStart$n.start) != 1 | !all(catStart$n.start %in% 1:nrow(params)) } ){
 
-## a) init.thet ## (a number that ends up being as long as the number of examinees)
+# --> Make sure 'n.it' is a positive integer that is not too large of a number.
+    if( interactive() ){
+      while( !( length(catStart$n.start) == 1 & all(catStart$n.start %in% 1:nrow(params)) ) ){
+        catStart$n.start <- readline("Select the number of items for starting the CAT: ")
+        catStart$n.start <- suppressWarnings(as.numeric(catStart$n.start))         
+      } # END while LOOP
+    } else{
+      catStart$n.start <- 1
+    } # END ifelse STATEMENTS
+  
+  } # END if STATEMENT
+  
+  
+## b) init.theta ## (a number that ends up being as long as the number of examinees)
 
-# --> If init.thet isn't specified, then it should be NA so the functions work.
-  if( is.null(catStart$init.thet) )
-    catStart$init.thet <- NA
+# --> If init.theta isn't specified, then it should be NA so the functions work.
+  if( is.null(catStart$init.theta) )
+    catStart$init.theta <- NA
     
-# --> If init.thet is an odd length, warn the user.
-  if( length(catStart$init.thet) != 1 & (length(catStart$init.thet) != dim(resp)[1]) )
+# --> If init.theta is an odd length, warn the user.
+  if( length(catStart$init.theta) != 1 & (length(catStart$init.theta) != dim(resp)[1]) )
     warning( "initial values are not specified for each simulee" )
 
-# --> Turn init.thet into a numeric variable.    
-  catStart$init.thet <- suppressWarnings(as.numeric(catStart$init.thet))
+# --> Turn init.theta into a numeric variable.    
+  catStart$init.theta <- suppressWarnings(as.numeric(catStart$init.theta))
   
 # --> And make sure that it is an actual number (and NOT NA).
   if( interactive() ){
-  	while( any(is.na(catStart$init.thet)) ){
-      catStart$init.thet <- readline("Select the initial/fixed trait estimate used for all simulees: ")
-  	  catStart$init.thet <- suppressWarnings(as.numeric(catStart$init.thet))
+  	while( any(is.na(catStart$init.theta)) ){
+      catStart$init.theta <- readline("Select the initial/fixed trait estimate used for all simulees: ")
+  	  catStart$init.theta <- suppressWarnings(as.numeric(catStart$init.theta))
   	} # END while LOOP 
   } else{
-    catStart$init.thet <- rep(0, length.out = dim(resp)) 
+    catStart$init.theta <- rep(0, length.out = dim(resp)) 
   } # END ifelse STATEMENT
 
 # Finally, we want the same number of initial ability values as there are simulees.  
-  catStart$init.thet <- rep(catStart$init.thet, length.out = dim(resp)[1])
+  catStart$init.theta <- rep(catStart$init.theta, length.out = dim(resp)[1])
 
 
-## b) select ##
+## c) select ##
   if( (length(catStart$select) != 1) | !any(catStart$select %in% sel.opt) ){
   	
 # --> Make sure 'select' matches one of the possible selection mechanisms.
@@ -244,11 +267,11 @@ catIrt <- function( params, mod = c("brm", "grm"),
   } # END if STATEMENT
 
 
-## c) at ## (only if 'select' is not 'random')
+## d) at ## (only if 'select' is not 'random', 'LW-FI' ,or 'PW-FI')
   if( (length(catStart$at) != 1) | !any(catStart$at %in% at.opt) ){
  
-# --> If we are randomly selecting, who cares about where we are selecting. 	
-  	if( catStart$select == "random" ){
+# --> If we are randomly selecting or selecting based on weights, who cares about where.	
+  	if( catStart$select == "random" | catStart$select == "LW-FI" | catStart$select == "PW-FI" ){
   	  catStart$at <- "theta"
 
 # --> Make sure 'at' matches one of the possible selection-at mechanisms.
@@ -264,15 +287,40 @@ catIrt <- function( params, mod = c("brm", "grm"),
     
   } # END if STATEMENT
   
+  
+## e) delta ## (only if using KL selection mechanism)
+  if( any( catStart$select %in% c("FP-KL", "VP-KL", "FI-KL", "VI-KL") ) ){
+  	
+    if( length(catStart$delta) != 1 )
+      catStart$delta <- NA
+    
+    if( any(is.na(catStart$delta)) | any(!is.numeric(catStart$delta)) ){
+ 
+# --> Make sure 'delta' is a positive number.    	
+      if(interactive()){
+        while( !( { length(catStart$delta) == 1 &
+        	            all(!is.na(catStart$delta)) &
+        	            all(is.numeric(catStart$delta)) } ) ){
+          catStart$delta <- readline("Select a starting half-width constant for use in KL information: ")
+          catStart$delta <- suppressWarnings(abs(as.numeric(catStart$delta)))
+        } # END while LOOP
+      } else{
+        catStart$delta <- .1
+      } # END ifelse STATEMENTS
+       
+    } # END if STATEMENT  
+    
+  } # END if STATEMENT
+  
 
-## d) n.select ##
+## f) n.select ##
 
 # --> If 'n.select' is not specified, set it to 1.
   if( !is.integer(catStart$n.select) )
     catStart$n.select <- 1
 
 
-## e) score ##
+## g) score ##
   if( (length(catStart$score) != 1) | !any(catStart$score %in% sco.opt) ){ 
 
 # --> Make sure 'score' matches one of the possible scoring methods.   
@@ -289,7 +337,7 @@ catIrt <- function( params, mod = c("brm", "grm"),
   } # END if STATEMENT
 
   
-## f) step.size ## (only if 'score' is 'step')
+## h) step.size ## (only if 'score' is 'step')
   if( { catStart$score == "step" &
   	    ( length(catStart$step.size) != 1 | !is.numeric(catStart$step.size) ) } ){
 
@@ -307,25 +355,9 @@ catIrt <- function( params, mod = c("brm", "grm"),
       catStart$step.size <- 1
     } # END ifelse STATEMENTS
   } # END if STATEMENT
- 
- 
-## g) n.it ##     
-  if( {length(catStart$n.it) != 1 | !all(catStart$n.it %in% 1:nrow(params)) } ){
-
-# --> Make sure 'n.it' is a positive integer that is not too large of a number.
-    if( interactive() ){
-      while( !( length(catStart$n.it) == 1 & all(catStart$n.it %in% 1:nrow(params)) ) ){
-        catStart$n.it <- readline("Select the number of items for starting the CAT: ")
-        catStart$n.it <- suppressWarnings(as.numeric(catStart$n.it))         
-      } # END while LOOP
-    } else{
-      catStart$n.it <- 1
-    } # END ifelse STATEMENTS
-  
-  } # END if STATEMENT
 	
   	  
-## h) leave.after.MLE ##
+## i) leave.after.MLE ##
 
 # --> If 'leave.after.MLE' is not specified, set it to FALSE.
   if( !is.logical(catStart$leave.after.MLE) )
@@ -335,7 +367,7 @@ catIrt <- function( params, mod = c("brm", "grm"),
 ## II. FOR THE CATMIDDLE LIST ##
 
 ## LIST OF OPTIONS ##
-  sel.opt  <- c("random", "FI", "KL")
+  sel.opt <- c("UW-FI", "LW-FI", "PW-FI", "FP-KL", "VP-KL", "FI-KL", "VI-KL", "random")
   at.opt   <- c("theta", "bounds")
   sco.opt  <- c("MLE", "WLE", "BME", "EAP")
 
@@ -354,37 +386,62 @@ catIrt <- function( params, mod = c("brm", "grm"),
       stop( paste("'catMiddle$select' must be ONLY ONE of ", paste(sel.opt, collapse = ", "), sep = "" ) )
     } # END ifelse STATEMENTS
   } # END if STATEMENT
- 
-  
-## b) at ## (only if 'select' is not 'random')
-  if( (length(catMiddle$at) != 1) | !any(catMiddle$at %in% at.opt) ){
 
-# --> If we are randomly selecting, who cares about where we are selecting. 
-  	if( catMiddle$select == "random" ){
+
+## b) at ## (only if 'select' is not 'random', 'LW-FI' ,or 'PW-FI')
+  if( (length(catMiddle$at) != 1) | !any(catMiddle$at %in% at.opt) ){
+ 
+# --> If we are randomly selecting or selecting based on weights, who cares about where.	
+  	if( catMiddle$select == "random" | catMiddle$select == "LW-FI" | catMiddle$select == "PW-FI" ){
   	  catMiddle$at <- "theta"
 
 # --> Make sure 'at' matches one of the possible selection-at mechanisms.
-  	} else if( interactive() ){        			
+  	} else if( interactive() ){       			
       while( !( length(catMiddle$at) == 1 & all(catMiddle$at %in% at.opt) ) )
-        catMiddle$at <- readline( paste("Select from ONLY ONE of the following middle locations to select items - ",
-    	                                paste(at.opt, collapse = ", "),
-    	                                ": ", sep = "")
-    	                        )   	                 	                    
+        catStart$at <- readline( paste("Select from ONLY ONE of the following middle locations to select items - ",
+    	                               paste(at.opt, collapse = ", "),
+    	                               ": ", sep = "")
+    	                       )    	                 	                    
     } else{
-      stop( paste("'catMiddle$at' must be ONLY ONE of ", paste(at.opt, collapse = ", "), sep = "" ) )
+      stop( paste("'catStart$at' must be ONLY ONE of ", paste(at.opt, collapse = ", "), sep = "" ) )
     } # END ifelse STATEMENTS
+    
+  } # END if STATEMENT
+  
+  
+## c) delta ## (only if using KL selection mechanism)
+  if( any( catMiddle$select %in% c("FP-KL", "VP-KL", "FI-KL", "VI-KL") ) ){
+  	
+    if( length(catMiddle$delta) != 1 )
+      catMiddle$delta <- NA
+    
+    if( any(is.na(catMiddle$delta)) | any(!is.numeric(catMiddle$delta)) ){
+ 
+# --> Make sure 'delta' is a positive number.    	
+      if(interactive()){
+        while( !( { length(catMiddle$delta) == 1 &
+        	            all(!is.na(catMiddle$delta)) &
+        	            all(is.numeric(catMiddle$delta)) } ) ){
+          catMiddle$delta <- readline("Select a middle half-width constant for use in KL information: ")
+          catMiddle$delta <- suppressWarnings(abs(as.numeric(catMiddle$delta)))
+        } # END while LOOP
+      } else{
+        catMiddle$delta <- .1
+      } # END ifelse STATEMENTS
+       
+    } # END if STATEMENT  
     
   } # END if STATEMENT
 
 
-## c) n.select ##
+## d) n.select ##
 
 # --> If 'n.select' is not specified, set it to 1.
   if( !is.integer(catMiddle$n.select) )
     catMiddle$n.select <- 1
 
 
-## d) score ##
+## e) score ##
   if( (length(catMiddle$score) != 1) | !any(catMiddle$score %in% sco.opt) ){
   	
 # --> Make sure 'score' matches one of the possible scoring methods.       
@@ -400,22 +457,24 @@ catIrt <- function( params, mod = c("brm", "grm"),
   } # END if STATEMENT
 
 
-## e) int ## (Make sure that the MLE/EAP/BME has an integer to maximize)
+## f) range ## (Make sure that the MLE/EAP/BME has an integer to maximize)
 
 # --> If 'int' is not correctly specified, set it to a default.
-  if( length(catMiddle$int) != 2 )
-    catMiddle$int <- c(-6, 6)
+  if( length(catMiddle$range) != 2 )
+    catMiddle$range <- c(-6, 6)
     
 # --> And making sure that the interval is in sorted order.
-  catMiddle$int <- sort(catMiddle$int)
+  catMiddle$range <- sort(catMiddle$range)
   
   
 ## III. FOR THE CATTERM LIST ##
 
 ## LIST OF OPTIONS ##
-  term.opt <- c("fixed", "var", "class")
-  meth.opt <- c("SPRT", "GLR", "CI")
-  sco.opt  <- c("MLE", "WLE", "BME", "EAP")
+  term.opt   <- c("fixed", "precision", "info", "class")
+  sco.opt    <- c("MLE", "WLE", "BME", "EAP")
+  p.meth.opt <- c("threshold", "change")
+  i.meth.opt <- c("threshold", "change")
+  c.meth.opt <- c("SPRT", "GLR", "CI")
   
 
   
@@ -490,47 +549,191 @@ catIrt <- function( params, mod = c("brm", "grm"),
 # And if n.max is less than the total number of params, one of the termination is implicitly fixed.
   if( catTerm$n.max < nrow(params) )
     catTerm$term <- c(catTerm$term, "fixed")
-
-
-## e) v.term ## (only for the variable termination criterion)
-  if( { any(catTerm$term == "var") &
-  	    ( (length(catTerm$v.term) != 1) | !is.numeric(catTerm$v.term) ) } ){
-
-# --> Make sure 'v.term' is a number. 	    	
-    if( interactive() ){     
-      catTerm$v.term <- NA		
-      while( !( (length(catTerm$v.term) == 1) & all( !is.na(catTerm$v.term) ) & is.numeric(catTerm$v.term) ) ){
-      	catTerm$v.term <- readline("Select an SEM cut-off for variable termination: ")
-        catTerm$v.term <- suppressWarnings(as.numeric(catTerm$v.term))
-      } # END while LOOP  	                    
-    } else{
-      catTerm$v.term <- 0
-    } # END ifelse STATEMENTS
     
-  } # END if STATEMENT
+  
+## e) p.term ##
 
-   
-## f) c.term ##
+## e1) p.term --> method ## (only for the precision termination criterion)
+  if( { any(catTerm$term == "precision") &
+  	    ( (length(catTerm$p.term$method) != 1) | !any(catTerm$p.term$method %in% p.meth.opt) ) } ){
 
-## f1) c.term --> method ## (only for the classification termination criterion)
-  if( { any(catTerm$term == "class") &
-  	    ( (length(catTerm$c.term$method) != 1) | !any(catTerm$c.term$method %in% meth.opt) ) } ){
-
-# --> Make sure 'method' matches at least one of the possible classification stopping rules.   	    	    
-    if( interactive() ){       			
-      while( !( length(catTerm$c.term$method) == 1 & all(catTerm$c.term$method %in% meth.opt) ) )
-        catTerm$c.term$method <- readline( paste("Select from ONLY ONE of the following classification stopping rules - ",
-    	                                         paste(meth.opt, collapse = ", "),
+# --> Make sure 'method' matches at least one of the possible method stopping rules.
+    if( interactive() ){
+      while( !( length(catTerm$p.term$method) == 1 & all(catTerm$p.term$method %in% p.meth.opt) ) )
+        catTerm$p.term$method <- readline( paste("Select from ONLY ONE of the following precision-based stopping rules - ",
+    	                                         paste(p.meth.opt, collapse = ", "),
     	                                         ": ", sep = "")
     	                                 )    	                 	                    
     } else{
-      stop( paste("'catTerm$c.term$method' must be ONLY ONE of ", paste(meth.opt, collapse = ", "), sep = "" ) )
+      stop( paste("'catTerm$p.term$method' must be ONLY ONE of ", paste(p.meth.opt, collapse = ", "), sep = "" ) )
+    } # END ifelse STATEMENTS
+    
+  } # END if STATEMENT
+
+  
+## e2) p.term --> crit ##
+
+## threshold ##
+  if( any(catTerm$term == "precision" & catTerm$p.term$method %in% c("threshold") ) ){
+  
+    if( length(catTerm$p.term$crit) != 1 )
+      catTerm$p.term$crit <- NA
+      
+    if( any(is.na(catTerm$p.term$crit)) | any(!is.numeric(catTerm$p.term$crit)) ){
+    	
+# --> Make sure 'crit' is a positive number.
+      if( interactive() ){
+        repeat{
+          catTerm$p.term$crit <- readline("Select an SEM cut-off for variable termination: ")
+          catTerm$p.term$crit <- suppressWarnings(as.numeric(catTerm$p.term$crit))
+          
+          if( !( all(!is.na(catTerm$p.term$crit)) & all(is.numeric(catTerm$p.term$crit)) ) )
+            next;
+          
+          if( catTerm$p.term$crit >= 0 )
+            break;
+            
+        } # END repeat LOOP
+      } else{
+        catTerm$p.term$crit <- .25
+      } # END ifelse STATEMENTS
+    } # END if STATEMENT
+
+  } # END if STATEMENT
+
+
+## change ##
+
+  if( any(catTerm$term == "precision" & catTerm$p.term$method %in% c("change") ) ){
+  
+    if( length(catTerm$p.term$crit) != 1 )
+      catTerm$p.term$crit <- NA
+      
+    if( any(is.na(catTerm$p.term$crit)) | any(!is.numeric(catTerm$p.term$crit)) ){
+    	
+# --> Make sure 'crit' is a positive number.
+      if( interactive() ){
+        repeat{
+          catTerm$p.term$crit <- readline("Select the maximum SEM change for variable termination: ")
+          catTerm$p.term$crit <- suppressWarnings(as.numeric(catTerm$p.term$crit))
+          
+          if( !( all(!is.na(catTerm$p.term$crit)) & all(is.numeric(catTerm$p.term$crit)) ) )
+            next;
+          
+          if( catTerm$p.term$crit >= 0 )
+            break;
+            
+        } # END repeat LOOP
+      } else{
+        catTerm$p.term$crit <- .25
+      } # END ifelse STATEMENTS
+    } # END if STATEMENT
+
+  } # END if STATEMENT
+
+  
+## f) i.term ## (only for the info termination criterion)
+
+## f1) i.term --> method ## (only for the info termination criterion)
+  if( { any(catTerm$term == "info") &
+  	    ( (length(catTerm$i.term$method) != 1) | !any(catTerm$i.term$method %in% i.meth.opt) ) } ){
+
+# --> Make sure 'method' matches at least one of the possible method stopping rules.
+    if( interactive() ){
+      while( !( length(catTerm$i.term$method) == 1 & all(catTerm$i.term$method %in% i.meth.opt) ) )
+        catTerm$i.term$method <- readline( paste("Select from ONLY ONE of the following info-based stopping rules - ",
+    	                                         paste(i.meth.opt, collapse = ", "),
+    	                                         ": ", sep = "")
+    	                                 )    	                 	                    
+    } else{
+      stop( paste("'catTerm$i.term$method' must be ONLY ONE of ", paste(i.meth.opt, collapse = ", "), sep = "" ) )
+    } # END ifelse STATEMENTS
+    
+  } # END if STATEMENT
+ 
+ 
+## f2) i.term --> crit ##
+
+## threshold ##
+  if( any(catTerm$term == "info" & catTerm$i.term$method %in% c("threshold") ) ){
+  
+    if( length(catTerm$i.term$crit) != 1 )
+      catTerm$i.term$crit <- NA
+      
+    if( any(is.na(catTerm$i.term$crit)) | any(!is.numeric(catTerm$i.term$crit)) ){
+    	
+# --> Make sure 'crit' is a positive number.
+      if( interactive() ){
+        repeat{
+          catTerm$i.term$crit <- readline("Select a Fisher Information cut-off for variable termination: ")
+          catTerm$i.term$crit <- suppressWarnings(as.numeric(catTerm$i.term$crit))
+          
+          if( !( all(!is.na(catTerm$i.term$crit)) & all(is.numeric(catTerm$i.term$crit)) ) )
+            next;
+          
+          if( catTerm$i.term$crit >= 0 )
+            break;
+            
+        } # END repeat LOOP
+      } else{
+        catTerm$i.term$crit <- 2
+      } # END ifelse STATEMENTS
+    } # END if STATEMENT
+
+  } # END if STATEMENT
+
+ 
+## change ##
+  if( any(catTerm$term == "info" & catTerm$i.term$method %in% c("change") ) ){
+  
+    if( length(catTerm$i.term$crit) != 1 )
+      catTerm$i.term$crit <- NA
+      
+    if( any(is.na(catTerm$i.term$crit)) | any(!is.numeric(catTerm$i.term$crit)) ){
+    	
+# --> Make sure 'crit' is a positive number.
+      if( interactive() ){
+        repeat{
+          catTerm$i.term$crit <- readline("Select the maximum Fisher Information change for variable termination: ")
+          catTerm$i.term$crit <- suppressWarnings(as.numeric(catTerm$i.term$crit))
+          
+          if( !( all(!is.na(catTerm$i.term$crit)) & all(is.numeric(catTerm$i.term$crit)) ) )
+            next;
+          
+          if( catTerm$i.term$crit >= 0 )
+            break;
+            
+        } # END repeat LOOP
+      } else{
+        catTerm$i.term$crit <- .5
+      } # END ifelse STATEMENTS
+    } # END if STATEMENT
+
+  } # END if STATEMENT
+
+
+   
+## g) c.term ##
+
+## g1) c.term --> method ## (only for the classification termination criterion)
+  if( { any(catTerm$term == "class") &
+  	    ( (length(catTerm$c.term$method) != 1) | !any(catTerm$c.term$method %in% c.meth.opt) ) } ){
+
+# --> Make sure 'method' matches at least one of the possible classification stopping rules.   	    	    
+    if( interactive() ){       			
+      while( !( length(catTerm$c.term$method) == 1 & all(catTerm$c.term$method %in% c.meth.opt) ) )
+        catTerm$c.term$method <- readline( paste("Select from ONLY ONE of the following classification-based stopping rules - ",
+    	                                         paste(c.meth.opt, collapse = ", "),
+    	                                         ": ", sep = "")
+    	                                 )    	                 	                    
+    } else{
+      stop( paste("'catTerm$c.term$method' must be ONLY ONE of ", paste(c.meth.opt, collapse = ", "), sep = "" ) )
     } # END ifelse STATEMENTS
     
   } # END if STATEMENT
 
 
-## f2) c.term --> bounds ## (only for the class termination criterion or weird selection)  
+## g2) c.term --> bounds ## (only for the class termination criterion or weird selection)  
   if( any(catTerm$term == "class") | any(c(catStart$at, catMiddle$at) %in% "bounds") ){
 
 # Step 1: Make sure that the classification bound(s) exist.
@@ -583,14 +786,13 @@ catIrt <- function( params, mod = c("brm", "grm"),
 
   } # END if STATEMENT
   
-## f3) c.term --> categ ## (only for the class termination criterion)
+## g3) c.term --> categ ## (only for the class termination criterion)
   if( any(catTerm$term == "class") & is.null(catTerm$c.term$categ) )
     catTerm$c.term$categ <- 1:(ncol(catTerm$c.term$bounds) + 1)
 
   
-## f4) c.term --> delta ## (only for the class termination criterion or weird selection)
-  if( { any( catTerm$term == "class" & catTerm$c.term$method %in% c("SPRT", "GLR") ) |
-  	    any(c(catStart$select, catMiddle$select) %in% "KL") } ){
+## g4) c.term --> delta ## (only for the class termination criterion)
+  if( { any( catTerm$term == "class" & catTerm$c.term$method %in% c("SPRT", "GLR") ) } ){
   	
     if( length(catTerm$c.term$delta) != 1 )
       catTerm$c.term$delta <- NA
@@ -614,7 +816,7 @@ catIrt <- function( params, mod = c("brm", "grm"),
   } # END if STATEMENT
 
 
-## f5) c.term --> alpha/beta ##
+## g5) c.term --> alpha/beta ##
   if( any( catTerm$term == "class" & catTerm$c.term$method %in% c("SPRT", "GLR") ) ){
   
     if( length(catTerm$c.term$alpha) != 1 )
@@ -665,7 +867,7 @@ catIrt <- function( params, mod = c("brm", "grm"),
   } # END if STATEMENT
 
 
-## f6) c.term --> conf.lev ##
+## g6) c.term --> conf.lev ##
   if( any(catTerm$term == "class" & catTerm$c.term$method %in% c("CI") ) ){
   
     if( length(catTerm$c.term$conf.lev) != 1 )
@@ -723,13 +925,13 @@ catIrt <- function( params, mod = c("brm", "grm"),
   tot_sem    <- vector("numeric",   length = n_thet)
   
 # Vectors to store TRUE thetas, categories:
-  if( missing(thetas) ){
-    thetas     <- NULL
+  if( missing(theta) ){
+    theta      <- NULL
     true_theta <- rep(NA, length = n_thet)
-  } else if( is.null(thetas) ){
+  } else if( is.null(theta) ){
     true_theta <- rep(NA, length = n_thet)
   } else{
-    true_theta <- thetas
+    true_theta <- theta
   } # END ifelse STATEMENT
   
   true_categ <- vector("character", length = n_thet)
@@ -737,34 +939,11 @@ catIrt <- function( params, mod = c("brm", "grm"),
   
 # To store the selection rates (for Sympson-Hetter):
   S <- NULL
-  
-#~~~~~~~~~~~~~~~~~#
-# KEEPING CLASSES #
-#~~~~~~~~~~~~~~~~~#
-
-# Making sure that ...
-# --> 1) Selecting elements does not change the class, and
-  assign( paste("[.", mod, sep = ""), function(x, ...){
-  	                                    r <- NextMethod("[")
-  	                                    class(r) <- class(x)
-  	                                    return(r)
-  	 	                              }, # END FUNCTION
-  	      envir = environment() )
-
-# --> 2) Assignment elements does not change the class.  	                        
-  assign( paste("[<-.", mod, sep = ""), function(x, ...){ 	
-  	                                      r <- NextMethod("[<-")
-  	                                      class(r) <- class(x)
-  	                                      return(r)
-  	                                    }, # END FUNCTION
-  	      envir = environment() )
-
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 # RUNNING THROUGH THE CAT: PER PERSON #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-
 
 #~~~~~~~~~~~~~~~~~~~~~~#
 # Progress Statement 1 #
@@ -790,7 +969,7 @@ catIrt <- function( params, mod = c("brm", "grm"),
     catTerm.i   <- catTerm
   
 # Second, the particular simulee's initial theta value and classification bounds:
-    catStart.i$init.thet    <- catStart$init.thet[i]
+    catStart.i$init.theta     <- catStart$init.theta[i]
     
     if( !is.null( dim(catTerm$c.term$bounds) ) )
       catTerm.i$c.term$bounds <- catTerm$c.term$bounds[i, ]
@@ -802,7 +981,7 @@ catIrt <- function( params, mod = c("brm", "grm"),
 # Responses, proximate theta ests/info/sem, item numbers/parameters of CAT:
     cat_resp.i  <- rep(NA, times = catTerm.i$n.max)
   
-    cat_theta.i <- c(catStart.i$init.thet, cat_resp.i)
+    cat_theta.i <- c(catStart.i$init.theta, cat_resp.i)
     cat_info.i  <- cat_resp.i
     cat_sem.i   <- cat_resp.i
   
@@ -840,7 +1019,7 @@ catIrt <- function( params, mod = c("brm", "grm"),
 # --> b) Call the estimation function on stuff to this point,
       x  <- get(scoreFun)( resp = cat_resp.i[1:j],
                            params = cat_par.i[1:j, -c(1, ncol(params)), drop = FALSE],
-                           int = catMiddle.i$int, mod = mod, ddist = ddist, ... )
+                           range = catMiddle.i$range, mod = mod, ddist = ddist, ... )
                            
       cat_theta.i[j + 1] <- x$theta
       cat_info.i[j]      <- x$info
@@ -917,7 +1096,7 @@ catIrt <- function( params, mod = c("brm", "grm"),
 # --> b) Call the estimation function on stuff to this point,
     x  <- get(scoreFun)( resp = resp.i,
                          params = params[ , -c(1, ncol(params))],
-                         int = catMiddle.i$int, mod = mod, ddist = ddist, ... )
+                         range = catMiddle.i$range, mod = mod, ddist = ddist, ... )
     
     tot_theta[i] <- x$theta
     tot_info[i]  <- x$info
@@ -932,7 +1111,7 @@ catIrt <- function( params, mod = c("brm", "grm"),
 # --> b) Estimate the total thetas to this point as BME.
       x <- bmeEst( resp = resp[1:i, ],
                    params = params[ , -c(1, ncol(params))],
-                   int = catMiddle.i$int, mod = mod, ddist = ddist, ... )
+                   range = catMiddle.i$range, mod = mod, ddist = ddist, ... )
                    
       tot_theta[1:i] <- x$theta
       tot_info[1:i]  <- x$info
@@ -948,8 +1127,8 @@ catIrt <- function( params, mod = c("brm", "grm"),
   	
     tot_categ[i] <- catTerm.i$c.term$categ[sum( tot_theta[i] > catTerm.i$c.term$bounds ) + 1]  # based on total-test thetas
   	
-    if( !is.null(thetas) )
-      true_categ[i] <- catTerm.i$c.term$categ[sum( thetas[i] > catTerm.i$c.term$bounds ) + 1]  # based on true thetas
+    if( !is.null(theta) )
+      true_categ[i] <- catTerm.i$c.term$categ[sum( theta[i] > catTerm.i$c.term$bounds ) + 1]  # based on true thetas
     
   } # END if STATEMENT
 

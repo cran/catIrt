@@ -1,36 +1,23 @@
 startCat <-
 function( params, resp, mod,
           it_flags = it_flags,
-          catStart = list( init.thet = 0, step.size = 3,
-                           select = c("random", "FI", "KL"),
-                           at = c("theta", "bounds"),
+          catStart = list( n.start = 5, init.theta = 0,
+                           select = c("UW-FI", "LW-FI", "PW-FI",
+                                      "FP-KL", "VP-KL", "FI-KL", "VI-KL",
+                                      "random"),
+                           at = c("theta", "bounds"), delta = .1,
                            n.select = 5,
                            score = c("fixed", "step", "random", "WLE", "BME", "EAP"),
-                           n.it = 5, leave.after.MLE = FALSE ),
+                           step.size = 3, leave.after.MLE = FALSE ),
           catMiddle,
           catTerm,
           ddist = dnorm, ... ){
-          	
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~# 
-# Arguments in catStart:                                  #
-#  - init.thet: theta to select item 1                    #
-#  - step.size: number of thetas to move if non-mixed     #
-#  - select: how items will be selected                   #
-#  - at: where the items should be selected               #
-#  - n.select: number of items to select b/w              #
-#  - n.it: number of items administered in catStart stage #
-#  - score: how to score theta after each item            #
-#    -- "fixed" (same place for each item)                #
-#    -- "step" (change by same amount)                    #
-#    -- "random" (random theta within the bounds)         #
-#  - leave.after.MLE: go to catMiddle after mixed resp    #
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
 # A vector to store selection rates (if needed):
   S        <- NULL
   
 ## FOR EACH ITEM IN STARTCAT ##
-  for(j in 1:catStart$n.it){
+  for(j in 1:catStart$n.start){
   	
     stp <- 0  # for the S-H iterature item selection
   	
@@ -40,13 +27,14 @@ function( params, resp, mod,
 
     while(!stp){
     	
-      it_select <- itChoose( left_par = params[!it_flags, -ncol(params)],
+      it_select <- itChoose( left_par = params[!it_flags, -ncol(params)], mod = mod,
+                             numb = catStart$n.select, n.select = catStart$n.select,
+                             cat_par = params[it_flags, -ncol(params)],
+                             cat_resp = cat_resp.i[1:(j - 1)],
                              cat_theta = cat_theta.i[j],
-                             numb = catStart$n.select,
-                             catMiddle = list(select   = catStart$select,
-                                              at       = catStart$at,
-                                              n.select = catMiddle$n.select),
-                             catTerm   = catTerm )[ , 1]
+                             select = catStart$select, at = catStart$at,
+                             bounds = catTerm$c.term$bounds, delta = catStart$delta,
+                             range  = catMiddle$range, ddist = ddist, ... )$params[ , 1]
                              
                              
 # Pick the particular item (using a trick in case we only have one left):
@@ -106,7 +94,7 @@ function( params, resp, mod,
 # --> b) Call the estimation function on stuff to this point,
       x <- get(scoreFun)(resp = cat_resp.i[1:j],
                          params = cat_par.i[1:j, -c(1, ncol(cat_par.i))],
-                         int = catMiddle$int, mod = mod, ddist = ddist, ...)
+                         range = catMiddle$range, mod = mod, ddist = ddist, ...)
                         
 # --> c) Pull out important information.
       cat_theta.i[j + 1] <<- x$theta
@@ -127,7 +115,7 @@ function( params, resp, mod,
 # --> b) Call the estimation function on stuff to this point,
       x <- get(scoreFun)(resp = cat_resp.i[1:j],
                          params = cat_par.i[1:j, -c(1, ncol(cat_par.i))],
-                         int = catMiddle$int, mod = mod, ddist = ddist, ...)
+                         range = catMiddle$range, mod = mod, ddist = ddist, ...)
                          
                         
 # --> c) Pull out important information.
@@ -142,22 +130,22 @@ function( params, resp, mod,
 # ----> If random, then randomly generate theta between int[1] and int[2], 
       cat_theta.i[j + 1] <<- switch(catStart$score,
                                     random = runif(n = 1,
-                                                   min = min(catMiddle$int)[1],
-                                                   max = max(catMiddle$int)[1]),
+                                                   min = min(catMiddle$range)[1],
+                                                   max = max(catMiddle$range)[1]),
 
 # ----> If step, then subtract or add based on last response,                                             
                                     step   = { function(){
                                    	             if( cat_resp.i[j] == min(get("resp", envir = environment(startCat))) ){
-        	                                       max(cat_theta.i[j] - catStart$step.size, min(catMiddle$int)[1])
+        	                                       max(cat_theta.i[j] - catStart$step.size, min(catMiddle$range)[1])
                                                  } else if( cat_resp.i[j] == max(get("resp", envir = environment(startCat))) ){
-                                                   min(cat_theta.i[j] + catStart$step.size, max(catMiddle$int)[1])
+                                                   min(cat_theta.i[j] + catStart$step.size, max(catMiddle$range)[1])
                                                  } else{
                                                    cat_theta.i[j]
                                                  } # END if STATEMENTS
                                               } }( ),
         
 # ----> If fixed (or anything else), then assign the fixed value.                          
-                                    fixed  = catStart$init.thet, catStart$init.thet)
+                                    fixed  = catStart$init.theta, catStart$init.theta)
                                 
     } # END ifelse STATEMENTS
     

@@ -1,5 +1,5 @@
 plot.catIrt <-
-function(x, which = "all", ids = "none", CI = .95, legend = TRUE, ask = TRUE, ... ){
+function(x, which = "all", ids = "none", conf.lev = .95, legend = TRUE, ask = TRUE, ... ){
  
 # First, making sure that if "ids" or "which" is all, we should include all plots.
   if( any(which == "all") )
@@ -16,10 +16,10 @@ function(x, which = "all", ids = "none", CI = .95, legend = TRUE, ask = TRUE, ..
     if( missing(ids) | ( any( ids < 1 | ids > length(x$cat_theta) ) ) )
       stop( "ids must be 'all', 'none', or an integer vector containing 1 -- length(theta)" )
   
-# Making sure the CI is within the bounds (only if there are ids to plot)).
+# Making sure the conf.lev is within the bounds (only if there are ids to plot)).
   if( all( ids != "none" ) ){
-    if( CI < 0 | CI > 1 ){
-  	  stop("CI must be a positive number between 0 and 1")
+    if( conf.lev < 0 | conf.lev > 1 ){
+  	  stop("conf.lev must be a positive number between 0 and 1")
   	}
   } # END if STATEMENT
 
@@ -91,7 +91,7 @@ function(x, which = "all", ids = "none", CI = .95, legend = TRUE, ask = TRUE, ..
     plot(x = info.t$eval, y = info.t$info,
          type = "l", lwd = 2,
          main = "Bank Information Function",
-         xlab = expression(theta), ylab = "Expected Information", axes = FALSE, ... )
+         xlab = expression(theta), ylab = "Expected Information", axes = FALSE)
     axis(1, col = "grey")
     axis(2, col = "grey", las = 1)
   } # END if STATEMENT
@@ -101,7 +101,7 @@ function(x, which = "all", ids = "none", CI = .95, legend = TRUE, ask = TRUE, ..
     plot(x = info.t$eval, y = info.t$sem,
          type = "l", lwd = 2,
          main = "Bank SEM Function",
-         xlab = expression(theta), ylab = "Expected SEM", axes = FALSE, ... )
+         xlab = expression(theta), ylab = "Expected SEM", axes = FALSE)
     axis(1, col = "grey")
     axis(2, col = "grey", las = 1)
   } # END if STATEMENT
@@ -111,7 +111,7 @@ function(x, which = "all", ids = "none", CI = .95, legend = TRUE, ask = TRUE, ..
     plot(x = sort(x$cat_theta), y = info.e$info[order(x$cat_theta)],
          type = "l", lty = 1, lwd = 2,
          main = "Obs and Expected CAT Fisher Information",
-         xlab = expression(theta), ylab = "Information", axes = FALSE, ... )
+         xlab = expression(theta), ylab = "Information", axes = FALSE)
     axis(1, col = "grey")
     axis(2, col = "grey", las = 1)
     lines(x = sort(x$cat_theta), y = info.o$info[order(x$cat_theta)],
@@ -130,7 +130,7 @@ function(x, which = "all", ids = "none", CI = .95, legend = TRUE, ask = TRUE, ..
     plot(x = sort(x$cat_theta), y = info.e$sem[order(x$cat_theta)],
          type = "l", lty = 1, lwd = 2,
          main = "Obs and Expected CAT Fisher-Based SEM",
-         xlab = expression(theta), ylab = "SEM", axes = FALSE, ... )
+         xlab = expression(theta), ylab = "SEM", axes = FALSE)
     axis(1, col = "grey")
     axis(2, col = "grey", las = 1)
     lines(x = sort(x$cat_theta), y = info.o$sem[order(x$cat_theta)],
@@ -151,25 +151,34 @@ function(x, which = "all", ids = "none", CI = .95, legend = TRUE, ask = TRUE, ..
 
 # Plotting CAT Steps for Desired People (if it is requested).
   if( !is.null(ids) & any(ids != "none") ){
- 
+
 # For all people do the following:
 # - pull out the id number,
 # - pull out the vector of theta estimates for that person in the cat,
 # - plot the theta estimates along with 1.96 times their standard errors,
 # - write nice things, and include a line for the Bank Ability estimate.
   	for( i in seq_along(ids) ){
-  	  z.crit                <- qnorm( p = (1 - CI)/2 )
+  	  z.crit                <- qnorm( p = (1 - conf.lev)/2 )
       id.i                  <- ids[i]
       theta.i               <- x$cat_indiv[[id.i]]$cat_theta
       sem.i                 <- x$cat_indiv[[id.i]]$cat_sem
       sem.i[ is.na(sem.i) ] <- 10
-      plot(x = seq_along(theta.i), y = theta.i,
-           xlab = "CAT Step", ylab = expression(theta),
-           main = paste( "Ability Estimates for Simulee ", id.i, sep = ""),
-           type = "b", lty = 2, lwd = 2, pch = 20, axes = FALSE, ... )
-      axis(1, col = "grey",
-           at = seq_along(theta.i), labels = seq_along(theta.i) - 1)
-      axis(2, col = "grey", las = 1)
+      
+# Build a list to make calling plots more customizable
+      p.list <- list(xlab = "CAT Step", ylab = expression(theta),
+                     main = paste( "Ability Estimates for Simulee ", id.i, sep = ""),
+                     type = "b", lty = 2, lwd = 2, pch = 20, axes = FALSE)
+      p.list <- modifyList(p.list, list(x = seq_along(theta.i), y = theta.i, ...) )
+        
+# Plot several things, including one customizable and the others not-so-much
+      do.call(plot, p.list)
+      
+      if( !p.list$axes ){
+        axis(1, col = "grey",
+             at = seq_along(theta.i), labels = seq_along(theta.i) - 1)
+        axis(2, col = "grey", las = 1)
+      } # END if STATEMENT
+      
       mtext(text =  paste( "CAT Theta Estimate: ",  round(x$cat_theta[id.i], 3), "; ",
                            "Bank Theta Estimate: ", round(x$tot_theta[id.i], 3), sep = "" ),
             side = 3, line = .5)
@@ -218,7 +227,7 @@ function(x, which = "all", ids = "none", CI = .95, legend = TRUE, ask = TRUE, ..
 #####
 # 4 # (CONFIDENCE INTERVAL)
 #####
-      if( CI > 0 ){
+      if( conf.lev > 0 ){
         y.leg <- c(y.leg, "Confidence Interval")
         c.leg <- c(c.leg, "red")
         l.leg <- c(l.leg, 2)

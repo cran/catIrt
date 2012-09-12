@@ -13,7 +13,7 @@
 
 
 /* FIRST THE FUNCTION TO SIMULATE THE BINOMIAL MODEL VALUES */
-SEXP brm( SEXP thetas, SEXP params )        /* the person and item parameters */
+SEXP brm( SEXP theta, SEXP params )         /* the person and item parameters */
 {
 
 /* 1) create scalars in C to hold temporary number */
@@ -31,17 +31,17 @@ SEXP brm( SEXP thetas, SEXP params )        /* the person and item parameters */
   double *pthet, *ppar;                    /* pointers to theta and params */
 
 /*    b) get the dimensions of thet and param */
-  n_ppl = length( thetas );
+  n_ppl = length( theta );
 
   dimPar = getDims( params );
   n_it = dimPar[ 0 ];
 
 /*    c) protect the R objects */
-  PROTECT( thetas = coerceVector( thetas, REALSXP ) );
+  PROTECT( theta  = coerceVector( theta,  REALSXP ) );
   PROTECT( params = coerceVector( params, REALSXP ) );
 
 /*    d) point to the R objects */
-  pthet = REAL( thetas ); ppar = REAL( params );
+  pthet = REAL( theta ); ppar = REAL( params );
 
 /* 3)
  *    a) create sim to hold the answer */
@@ -94,7 +94,7 @@ SEXP brm( SEXP thetas, SEXP params )        /* the person and item parameters */
 
 
 /* SECOND THE FUNCTION TO SIMULATE THE GRADED RESPONSE MODEL VALUES */
-SEXP grm( SEXP thetas, SEXP params )        /* the person and item parameters */
+SEXP grm( SEXP theta, SEXP params )         /* the person and item parameters */
 {
 
 /* 1) create scalars in C to hold temporary number */
@@ -112,7 +112,7 @@ SEXP grm( SEXP thetas, SEXP params )        /* the person and item parameters */
   double *pthet, *ppar;                    /* pointers to theta and params */
 
 /*    b) get the dimensions of thet and param (including the bounds) */
-  n_ppl = length( thetas );
+  n_ppl = length( theta );
 
   dimPar = getDims( params );
   n_it = dimPar[ 0 ];
@@ -120,11 +120,11 @@ SEXP grm( SEXP thetas, SEXP params )        /* the person and item parameters */
   n_bnd = dimPar[ 1 ] - 1;
 
 /*    c) protect the R objects */
-  PROTECT( thetas = coerceVector( thetas, REALSXP ) );
+  PROTECT( theta  = coerceVector( theta,  REALSXP ) );
   PROTECT( params = coerceVector( params, REALSXP ) );
 
 /*    d) point to the R objects */
-  pthet = REAL( thetas ); ppar = REAL( params );
+  pthet = REAL( theta ); ppar = REAL( params );
 
 /* 3)
  *    a) create sim to hold the answer */

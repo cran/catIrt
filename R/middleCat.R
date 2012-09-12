@@ -4,10 +4,12 @@ function( params, resp, mod,
           cat_par, cat_resp, cat_theta,
           cat_info, cat_sem,
           catStart,
-          catMiddle = list( select = c("random", "FI", "KL"),
-                            at = c("theta", "bounds"),
+          catMiddle = list( select = c("UW-FI", "LW-FI", "PW-FI",
+                                       "FP-KL", "VP-KL", "FI-KL", "VI-KL",
+                                       "random"),
+                            at = c("theta", "bounds"), delta = .1,
                             n.select = 5,
-                            score = c("MLE", "WLE", "BME", "EAP"), int = c(-6, 6),
+                            score = c("MLE", "WLE", "BME", "EAP"), range = c(-6, 6),
                             expose = c("none", "SH") ),
           catTerm,
           ddist = dnorm, ... )
@@ -34,14 +36,17 @@ function( params, resp, mod,
 
   while(!stp){
     
-    it_select <- itChoose( left_par = params[!it_flags, -ncol(params)],
-                           cat_theta = cat_theta,
-                           numb = catMiddle$n.select,
-                           catMiddle = catMiddle,
-                           catTerm   = catTerm )[ , 1]
+      it_select <- itChoose( left_par = params[!it_flags, -ncol(params)], mod = mod,
+                             numb = catMiddle$n.select, n.select = catMiddle$n.select,
+                             cat_par = cat_par[ , -ncol(params)],
+                             cat_resp = cat_resp,
+                             cat_theta = cat_theta,
+                             select = catMiddle$select, at = catMiddle$at,
+                             bounds = catTerm$c.term$bounds, delta = catMiddle$delta,
+                             range  = catMiddle$range, ddist = ddist, ... )$params[ , 1]
                              
 # Pick the particular item (using a trick in case we only have one left):
-    cat_it.i[j]    <<- sample(c(it_select, it_select), size = 1)
+    cat_it.i[j] <<- sample(c(it_select, it_select), size = 1)
     
 # Mark the item (getting rid of it), and save the location of the item:
     it_flags[ pl <- which(params[ , 1] == cat_it.i[j]) ] <<- 1
@@ -98,7 +103,7 @@ function( params, resp, mod,
 # --> b) Call the estimation function on stuff to this point,
       x <- get(scoreFun)(resp = cat_resp.i[1:j],
                          params = cat_par.i[1:j, -c(1, ncol(cat_par.i))],
-                         int = catMiddle$int, mod = mod, ddist = ddist, ... )
+                         range = catMiddle$range, mod = mod, ddist = ddist, ... )
                         
 # --> c) Pull out important information.
       cat_theta.i[j + 1] <<- x$theta
@@ -111,20 +116,20 @@ function( params, resp, mod,
 # --> a) Figure out which procedure we will use (random/step/fixed),
       cat_theta.i[j + 1] <<- switch(catMiddle$score,
                                     random = runif(n = 1,
-                                                   min = min(catMiddle$int)[1],
-                                                   max = max(catMiddle$int)[1]),
+                                                   min = min(catMiddle$range)[1],
+                                                   max = max(catMiddle$range)[1]),
                                           
                                     step   = { function(){
                                                 if( cat_resp.i[j] == min(get("resp", envir = environment(middleCat))) ){
-        	                                          max(cat_thet[j] - step.size, min(catMiddle$int)[1])
+        	                                          max(cat_thet[j] - step.size, min(catMiddle$range)[1])
                                                 } else if( cat_resp.i[j] == max(get("resp", envir = environment(middleCat))) ){
-                                                  min(cat_thet[j] + step.size, max(catMiddle$int)[1])
+                                                  min(cat_thet[j] + step.size, max(catMiddle$range)[1])
                                                 } else{
                                                   cat_thet[j]
                                                 } # END if STATEMENTS
                                               } }( ),
                                 
-                                    fixed  = catStart$init.thet, catStart$init.thet)
+                                    fixed  = catStart$init.theta, catStart$init.theta)
                                 
     } # END ifelse STATEMENTS 
     
@@ -142,7 +147,7 @@ function( params, resp, mod,
 # --> b) Call the estimation function on stuff to this point,
     x <- get(scoreFun)(resp = cat_resp.i[1:j],
                        params = cat_par.i[1:j, -c(1, ncol(cat_par.i))],
-                       int = catMiddle$int, mod = mod, ddist = ddist, ...)
+                       range = catMiddle$range, mod = mod, ddist = ddist, ...)
                         
 # --> c) Pull out important information.
     cat_theta.i[j + 1] <<- x$theta

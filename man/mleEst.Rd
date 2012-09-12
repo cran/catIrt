@@ -14,12 +14,12 @@ Bayesian-Modal Estimation, and \code{eapEst} is Expected-A-Posterior Estimation.
 }
 
 \usage{
-mleEst(resp, params, int = c(-6, 6), mod = c("brm", "grm"), \dots)
-wleEst(resp, params, int = c(-6, 6), mod = c("brm", "grm"), \dots)
-bmeEst(resp, params, int = c(-6, 6), mod = c("brm", "grm"),
-       ddist = dnorm, \dots)
-eapEst(resp, params, int = c(-6, 6), mod = c("brm", "grm"),
-       ddist = dnorm, quad = 33, \dots)
+mleEst( resp, params, range = c(-6, 6), mod = c("brm", "grm"), \dots )
+wleEst( resp, params, range = c(-6, 6), mod = c("brm", "grm"), \dots )
+bmeEst( resp, params, range = c(-6, 6), mod = c("brm", "grm"),
+        ddist = dnorm, \dots )
+eapEst( resp, params, range = c(-6, 6), mod = c("brm", "grm"),
+        ddist = dnorm, quad = 33, \dots )
 }
 
 \arguments{
@@ -36,10 +36,10 @@ eapEst(resp, params, int = c(-6, 6), mod = c("brm", "grm"),
                 as a matrix, the rows must index the items, and the columns
                 must designate the item parameters.
 }
-  \item{int}{\bold{numeric:} a two-element numeric vector indicating the minimum and maximum over
-             which to optimize a likelihood function (\code{mleEst}) or posterior distribution
-             (\code{bmeEst}), find roots to a score function (\code{wleEst}), or integrate
-             over (\code{eapEst}).
+  \item{range}{\bold{numeric:} a two-element numeric vector indicating the minimum and maximum over
+               which to optimize a likelihood function (\code{mleEst}) or posterior distribution
+               (\code{bmeEst}), find roots to a score function (\code{wleEst}), or integrate
+               over (\code{eapEst}).
 }
   \item{mod}{\bold{character:} a character string indicating the IRT model.  Current support
              is for the 3-parameter binary response model (\option{"brm"}),
@@ -65,11 +65,22 @@ and the graded response model (\option{"grm"}).  The only difference between the
 is how they estimate ability.
 
 The function \code{mleEst} searches for a maximum of the log-likelihood with respect to
-each individual \eqn{\theta_i}.
+each individual \eqn{\theta_i} and uses \eqn{[T(\theta)]^{-1/2}} as the corresponding standard
+error of measurement (SEM), where \eqn{T(\theta)} is the observed test information function
+at \eqn{\theta}, as described in \code{\link{FI}}.
 
 The function \code{bmeEst} searches for the maximum of the log-likelihood after a
 log-prior is added, which effectively maximizes the posterior distribution for each
-individual \eqn{\theta_i}.
+individual \eqn{\theta_i}.  The SEM of the \code{bmeEst} estimator uses the well known
+relationship (Keller, 2000, p. 10)
+
+\deqn{V[\theta | \boldsymbol{u}_i]^{-1} = T(\theta) - \frac{\partial \log[p(\theta)]}{\partial \theta^2}}{
+      V[\theta | u_i]^{-1} = T(\theta) - d l[p(\theta)]/d\theta^2}
+
+where \eqn{V[\theta | \boldsymbol{u}_i]}{V[\theta | u_i]} is the variance of \eqn{\theta} after
+taking into consideration the prior distribution and \eqn{p(\theta)} is the prior distribution
+of \eqn{\theta}.  The function \code{bmeEst} estimates the second derivative of the prior
+distribution uses the \code{hessian} function in the \code{numDeriv} package.
 
 The function \code{wleEst} searches for the root of a modified score function (i.e.
 the first derivative of the log-likelihood with something added to it).  The modification
@@ -98,14 +109,19 @@ probability of response, as indicated in the help page for \code{\link{simIrt}},
 for the graded response model, where \eqn{P_{ijk}^{\prime}}{P_{ijk}'} is the first derivative
 of \eqn{P_{ijk}} with respect to \eqn{\theta}, \eqn{P_{ijk}^{\prime\prime}}{P_{ijk}''} is
 the second derivative of \eqn{P_{ijk}}, and \eqn{P_{ijk}} is the probability of responding
-in category k as indicated in the help page for \code{\link{simIrt}}.
+in category k as indicated in the help page for \code{\link{simIrt}}.  The SEM of the \code{wleEst}
+estimator uses an approximation based on Warm (1989, p. 449):
 
-The function \code{eapEst} finds the mean of the posterior distribution given the log-likelihood,
-a prior distribution (with specified parameters), and the number of quadrature points using the
-standard Bayesian identity with summations in place of integrations (see Bock and Mislevy, 1982).
-Rather than using the adaptive, quadrature based \code{integrate}, \code{eapEst} uses the
-flexible \code{integrate.xy} function in the \code{sfsmisc} package.  As long as the prior distribution
-is reasonable (such that the joint distribution is relatively smooth), this method should work.
+\deqn{ V(\theta) \approx \frac{T(\theta) + \frac{H(\theta)}{2I(\theta)}}{T^2(\theta)}}{
+       V(\theta) \approx (T(\theta) + H(\theta)/[2I(\theta)])/T^2(\theta).}
+
+The function \code{eapEst} finds the mean and standard deviation of the posterior distribution
+given the log-likelihood, a prior distribution (with specified parameters), and the number of
+quadrature points using the standard Bayesian identity with summations in place of integrations
+(see Bock and Mislevy, 1982). Rather than using the adaptive, quadrature based \code{integrate},
+\code{eapEst} uses the flexible \code{integrate.xy} function in the \code{sfsmisc} package. 
+As long as the prior distribution is reasonable (such that the joint distribution is relatively smooth),
+this method should work.
 }
 
 \value{
@@ -114,12 +130,11 @@ following elements:
   \item{theta}{an \eqn{N}-length vector of ability values, one for each simulee.
 }
   \item{info}{an \eqn{N}-length vector of observed test information, one for each simulee.
-             Test information is the sum of item information across items.  See \bold{\link{FI}}
+             Test information is the sum of item information across items.  See \code{\link{FI}}
              for more information.
 }
-  \item{sem}{an \eqn{N}-length vector of observed standard error of measurement
-             for each simulee, which is the inverse-square-root of test information.
-             See \bold{\link{FI}} for more information.
+  \item{sem}{an \eqn{N}-length vector of observed standard error of measurement (or posterior standard
+             deviation) for each simulee.  See \code{\link{FI}} for more information.
 }
 }
 
@@ -127,6 +142,8 @@ following elements:
 Bock, R. D., & Mislevy, R. J.  (1982).  Adaptive EAP estimation of ability in a microcomputer environment.  \emph{Applied Psychological Measurement}, \emph{6}, 431 -- 444.
 
 Embretson, S. E., & Reise, S. P.  (2000).  \emph{Item Response Theory for Psychologists}.  Mahway, NJ: Lawrence Erlbaum Associates.
+
+Keller (2000).  \emph{Ability estimation procedures in computerized adaptive testing} (Technical Report).  New York, NY: American Institute of Certified Public Accountants.
 
 Warm, T. A.  (1989).  Weighted likelihood estimation of ability in item response theory.  \emph{Psychometrika}, \emph{54}, 427 -- 450.
 
@@ -143,8 +160,8 @@ ability with a non-mixed response pattern (all 0s or all 1s).  The user might wa
 to include enough items in the model to allow for reasonable estimation.
 
 Weighted likelihood estimation (\code{wleEst}) uses \code{uniroot} to find the root
-of the modified score function, so that the end points of \option{int} must evaluate
-to opposite signs (or zero).  Rarely, the end points of \option{int} will evaluate
+of the modified score function, so that the end points of \option{range} must evaluate
+to opposite signs (or zero).  Rarely, the end points of \option{range} will evaluate
 to the same sign, so that \code{uniroot} will error.  In these cases, the user
 should try a different estimation method.  This will be fixed in future versions.
 
@@ -156,17 +173,16 @@ and \code{integrate.xy} provided an easy and flexible alternative.
 
 \seealso{
 \code{\link{catIrt}}, \code{\link[irtoys]{eap}}, \code{\link[catR]{eapEst}},
-\code{\link{integrate.xy}}, \code{\link[irtoys]{mlebme}}, \code{\link{simIrt}},
-\code{\link{uniroot}}
+\code{\link{hessian}}, \code{\link{integrate.xy}}, \code{\link[irtoys]{mlebme}},
+\code{\link{simIrt}}, \code{\link{uniroot}}
 }
 
 \examples{
+\dontrun{
+
 #########################
 # Binary Response Model #
 #########################
-
-\dontrun{
-
 set.seed(888)
 # generating random theta:
 theta <- rnorm(201)
@@ -180,9 +196,9 @@ b.resp <- simIrt(theta = theta, params = b.params, mod = "brm")$resp
 est.mle1 <- mleEst(resp = b.resp, params = b.params, mod = "brm")$theta
 est.wle1 <- wleEst(resp = b.resp, params = b.params, mod = "brm")$theta
 est.bme1 <- bmeEst(resp = b.resp, params = b.params, mod = "brm",
-                                  ddist = dnorm, mean = 0, sd = 1)$theta
+                   ddist = dnorm, mean = 0, sd = 1)$theta
 est.eap1 <- eapEst(resp = b.resp, params = b.params, mod = "brm",
-                                  ddist = dnorm, mean = 0, sd = 1, quad = 33)$theta
+                   ddist = dnorm, mean = 0, sd = 1, quad = 33)$theta
 
 # eap takes a while!
 
@@ -191,7 +207,7 @@ cor(cbind(theta = theta, mle = est.mle1, wle = est.wle1,
                          bme = est.bme1, eap = est.eap1))
 
 # you can force eap to be positive:
-est.eap2 <- eapEst(resp = b.resp, params = b.params, int = c(0, 6),
+est.eap2 <- eapEst(resp = b.resp, params = b.params, range = c(0, 6),
                                   mod = "brm", ddist = dunif, min = 0, max = 6)$theta
 
 est.eap2
@@ -215,19 +231,19 @@ theta <- rnorm(400)
 g.params <- cbind(a = runif(100, .5, 1.5), b1 = rnorm(100), b2 = rnorm(100),
                                            b3 = rnorm(100), b4 = rnorm(100))
 # simulating responses using random theta:
-g.resp <- simIrt(params = g.params, theta = theta, mod = "grm")
+g.mod <- simIrt(params = g.params, theta = theta, mod = "grm")
 
 # pulling out the responses and the parameters:
-g.params2 <- g.resp$params       # now the parameters are sorted
-g.resp2 <- g.resp$resp
+g.params2 <- g.mod$params[ , -1]       # now the parameters are sorted
+g.resp2 <- g.mod$resp
 
 # estimating theta using all four methods:
 est.mle3 <- mleEst(resp = g.resp2, params = g.params2, mod = "grm")$theta
 est.wle3 <- wleEst(resp = g.resp2, params = g.params2, mod = "grm")$theta
 est.bme3 <- bmeEst(resp = g.resp2, params = g.params2, mod = "grm",
-                                   ddist = dnorm, mean = 0, sd = 1)$theta
+                   ddist = dnorm, mean = 0, sd = 1)$theta
 est.eap3 <- eapEst(resp = g.resp2, params = g.params2, mod = "grm",
-                                   ddist = dnorm, mean = 0, sd = 1, quad = 33)$theta
+                   ddist = dnorm, mean = 0, sd = 1, quad = 33)$theta
 
 # and the correlations are still pretty high:
 cor(cbind(theta = theta, mle = est.mle3, wle = est.wle3,
@@ -238,6 +254,7 @@ cor(est.mle1, mleEst(resp = b.resp + 1, params = b.params[ , -3], mod = "grm")$t
 cor(est.wle1, wleEst(resp = b.resp + 1, params = b.params[ , -3], mod = "grm")$theta)
 cor(est.bme1, bmeEst(resp = b.resp + 1, params = b.params[ , -3], mod = "grm")$theta)
 cor(est.eap1, eapEst(resp = b.resp + 1, params = b.params[ , -3], mod = "grm")$theta)
+
 }
 
 }

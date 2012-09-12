@@ -11,35 +11,42 @@ item selection mechanisms, estimation procedures, and termination criteria.
 }
 
 \usage{
-catIrt(params, mod = c("brm", "grm"),
-       resp = NULL,
-       thetas = NULL,
-       catStart = list(init.thet = 0, step.size = 3,
-                       select = c("random", "FI", "KL"),
-                       at = c("theta", "bounds"),
-                       n.select = 5,
-                       score = c("fixed", "step", "random", "WLE", "BME", "EAP"),
-                       n.it = 5, leave.after.MLE = FALSE),
-       catMiddle = list(select = c("random", "FI", "KL"),
-                        at = c("theta", "bounds"),
-                        n.select = 5,
-                        score = c("MLE", "WLE", "BME", "EAP"), int = c(-6, 6),
-                        expos = c("none", "SH")),
-       catTerm = list(term = c("fixed", "var", "class"),
-                      score = c("MLE", "WLE", "BME", "EAP"),
-                      n.min = 5, n.max = 50,
-                      v.term = .25,
-                      c.term = list(method = c("SPRT", "GLR", "CI"),
-                                    bounds = c(-1, 1),
-                                    categ = c(0, 1, 2),
-                                    delta = .1,
-                                    alpha = .05, beta = .05,
-                                    conf.lev = .95)),
-       ddist = dnorm,
-       progress = TRUE, \dots)
-\method{summary}{catIrt}(object, group = TRUE, ids = "none", \dots)
-\method{plot}{catIrt}(x, which = "all", ids = "none", 
-     CI = .95, legend = TRUE, ask = TRUE, \dots)
+catIrt( params, mod = c("brm", "grm"),
+        resp = NULL,
+        theta = NULL,
+        catStart = list( n.start = 5, init.theta = 0,
+                         select = c("UW-FI", "LW-FI", "PW-FI",
+                                    "FP-KL", "VP-KL", "FI-KL", "VI-KL",
+                                    "random"),
+                         at = c("theta", "bounds"), delta = .1,
+                         n.select = 1,
+                         score = c("fixed", "step", "random", "WLE", "BME", "EAP"),
+                         step.size = 3, leave.after.MLE = FALSE ),
+        catMiddle = list( select = c("UW-FI", "LW-FI", "PW-FI",
+                                     "FP-KL", "VP-KL", "FI-KL", "VI-KL",
+                                     "random"),
+                          at = c("theta", "bounds"), delta = .1,
+                          n.select = 1,
+                          score = c("MLE", "WLE", "BME", "EAP"), range = c(-6, 6),
+                          expos = c("none", "SH") ),
+        catTerm = list( term = c("fixed", "precision", "info", "class"),
+                        score = c("MLE", "WLE", "BME", "EAP"),
+                        n.min = 5, n.max = 50,
+                        p.term = list(method = c("threshold", "change"),
+                                      crit = .25),
+                        i.term = list(method = c("threshold", "change"),
+                                      crit = 2), 
+                        c.term = list(method = c("SPRT", "GLR", "CI"),
+                                      bounds = c(-1, 1),
+                                      categ = c(0, 1, 2),
+                                      delta = .1,
+                                      alpha = .05, beta = .05,
+                                      conf.lev = .95) ),
+        ddist = dnorm,
+        progress = TRUE, \dots )
+\method{summary}{catIrt}( object, group = TRUE, ids = "none", \dots )
+\method{plot}{catIrt}( x, which = "all", ids = "none", 
+      conf.lev = .95, legend = TRUE, ask = TRUE, \dots )
 }
 
 \arguments{
@@ -48,9 +55,10 @@ catIrt(params, mod = c("brm", "grm"),
   \item{params}{\bold{numeric:} a matrix of item parameters.  If specified as a matrix,
                 the rows must index the items, and the columns must designate the item
                 parameters.  For the binary response model, \command{params} must either
-                be a 3-column matrix (if not using item exposure control), or a 4-column
+                be a 3-column matrix (if not using item exposure control), a 4-5-column
                 matrix (with Sympson-Hetter parameters as the last column if using item
-                exposure control).  See \bold{Details} for more information.
+                exposure control), or a 4-5-column matrix (if including the item number
+                as the first column).  See \bold{Details} for more information.
 }
   \item{mod}{\bold{character:} a character string indicating the IRT model.  Current support
              is for the 3-parameter binary response model (\option{"brm"}),
@@ -68,39 +76,62 @@ catIrt(params, mod = c("brm", "grm"),
               integers \eqn{1, \ldots, K}, where \eqn{K} is the number of categories, as
               indicated by the dimension of \command{params}.
 }
-  \item{thetas}{\bold{numeric:} either a \eqn{N}-dimensional vector (where \eqn{N} indicates the
-                number of simulees) or NULL if specifying \command{resp}.
+  \item{theta}{\bold{numeric:} either a \eqn{N}-dimensional vector (where \eqn{N} indicates the
+               number of simulees) or NULL if specifying \command{resp}.
 }
   \item{catStart}{\bold{list:} a list of options for starting the CAT including:
 
   \enumerate{
-    \item \code{init.thet}: a scalar or vector of initial starting estimates of \eqn{\theta}.
-           If \command{init.thet} is a scalar, every simulee will have the same starting value.
+    \item \code{n.start}: a scalar indicating the number of items that are used for each 
+           simulee at the beginning of the CAT.  After \option{n.start} reaches the specified value,
+           the CAT will shift to the middle set of parameters.
+    \item \code{init.theta}: a scalar or vector of initial starting estimates of \eqn{\theta}.
+           If \command{init.theta} is a scalar, every simulee will have the same starting value.
            Otherwise, simulees will have different starting values based on the respective element
-           of \command{init.thet}.
-    \item \code{step.size}: a scalar indicating how much to increment or decrement the
-           estimate of \eqn{\theta} if \command{score} is set to \option{"step"}.
+           of \command{init.theta}.
     \item \code{select}: a character string indicating the item selection method for the 
-           first few items.  Items can be selected either through maximum Fisher information
-           (\option{"FI"}) at a point, Kullback-Leibler Divergence (\option{"KL"}) at
-           a point, or randomly (\option{"random"}).
+           first few items.  Items can be selected either through maximum Fisher information or
+           Kullback-Leibler divergence methods or randomly.  The Fisher information methods include
+
+    \itemize{
+      \item \option{"UW-FI"}: unweighted Fisher information at a point.
+      \item \option{"LW-FI"}: Fisher information weighted across the likelihood function.
+      \item \option{"PW-FI"}: Fisher information weighted across the posterior distribution of
+            \eqn{\theta}.
+    }
+
+          And the Kullback-Leibler divergence methods include
+
+    \itemize{
+      \item \option{"FP-KL"}: pointwise KL divergence between [P +/- delta], where
+             P is either the current \eqn{\theta} estimate or a classification bound.
+      \item \option{"VP-KL"}: pointwise KL divergence between [P +/- delta/sqrt(n)], where
+             n is the number of items given to this point in the CAT.
+      \item \option{"FI-KL"}: KL divergence integrated along [P -/+ delta] with respect to P
+      \item \option{"VI-KL"}: KL divergence integrated along [P -/+ delta/sqrt(n)] with
+             respect to P.
+    }
+        
+          See \code{\link{itChoose}} for more information.
+ 
     \item \code{at}: a character string indicating where to select items.  If \command{select}
-           is \option{"FI"} and \command{at} is \option{"theta"}, then items will be selected
+           is \option{"UW-FI"} and \command{at} is \option{"theta"}, then items will be selected
            to maximize Fisher information at the proximate \eqn{\theta} estimates.
+	\item \code{delta}: a scalar indicating the multiplier used in initial item selection if
+	       a Kullback-Leibler method is chosen.
     \item \code{n.select}: an \emph{integer} indicating the number of items to select at one time.
-           For instance, if \command{select} is \option{"FI"}, \command{at} is \option{"theta"}, and
+           For instance, if \command{select} is \option{"UW-FI"}, \command{at} is \option{"theta"}, and
            \command{n.select} is 5, the item choosing function will randomly select between the top
            \emph{5} items that maximize expected Fisher information at proximate \eqn{\theta} estimates.
     \item \code{score}: a character string indicating the \eqn{\theta} estimation method.  As
-           of now, the options for scoring the first few items are \option{"fixed"} (at \command{init.thet}),
-           \option{"step"} (by adding or subtracting \command{step.size} \eqn{\theta} estimates after
-           each item), Weighted Likelihood Estimation (\option{"WLE"}), Bayesian Modal Estimation (\option{"BME"}),
-           and Expected A-Posteriori Estimation (\option{"EAP"}).  The latter two allow user specified
-           prior distributions through density (\code{d...}) functions.  See \code{\link{mleEst}} for more
-           information.
-    \item \code{n.it}: a scalar indicating the number of items that are used for each 
-           simulee at the beginning of the CAT.  After \option{n.it} reaches the specified value,
-           the CAT will shift to the middle set of parameters.
+           of now, the options for scoring the first few items are \option{"fixed"} (at 
+           \command{init.thet}), \option{"step"} (by adding or subtracting \command{step.size} \eqn{\theta}
+           estimates after each item), Weighted Likelihood Estimation (\option{"WLE"}), Bayesian Modal
+           Estimation (\option{"BME"}), and Expected A-Posteriori Estimation (\option{"EAP"}).  The latter
+           two allow user specified prior distributions through density (\code{d...}) functions.  See
+           \code{\link{mleEst}} for more information.
+	\item \code{step.size}: a scalar indicating how much to increment or decrement the
+           estimate of \eqn{\theta} if \command{score} is set to \option{"step"}.
     \item \code{leave.after.MLE}: a logical indicating whether to skip the remainder of the starting
            items if the user has a mixed response pattern and/or a finite maximum likelihood estimate
            of \eqn{\theta} can be achieved.
@@ -116,14 +147,16 @@ catIrt(params, mod = c("brm", "grm"),
 		   of the options.
 	\item \code{at}: a character string indicating where to select items.  See \command{select} in
 	       \command{catStart} for an explanation of the options.
+    \item \code{delta}: a scalar indicating the multiplier used in middle item selection if
+           a Kullback-Leibler method is chosen.
 	\item \code{n.select}: an \emph{integer} indicating the number of items to select at one time.
 	\item \code{score}: a character string indicating the \eqn{\theta} estimation method.  As
-           of now, the options for scoring the remaining items are Maximum Likelihood Estimation (\option{"MLE"}),
-           Weighted Likelihood Estimation (\option{"WLE"}), Bayesian Modal Estimation (\option{"BME"}),
-           and Expected A-Posteriori Estimation (\option{"EAP"}).  The latter two allow user specified
-           prior distributions through density (\code{d...}) functions.  See \code{\link{mleEst}} for more
-           information.
-    \item \code{int}: a 2-element integer vector indicating the minimum and maximum that
+           of now, the options for scoring the remaining items are Maximum Likelihood Estimation 
+           (\option{"MLE"}), Weighted Likelihood Estimation (\option{"WLE"}), Bayesian Modal Estimation
+           (\option{"BME"}), and Expected A-Posteriori Estimation (\option{"EAP"}).  The latter two allow
+           user specified prior distributions through density (\code{d...}) functions.  See
+           \code{\link{mleEst}} for more information.
+    \item \code{range}: a 2-element numeric vector indicating the minimum and maximum that
 		   \eqn{\theta} should be estimated in the course of the CAT.
 	\item \code{expos}: a character string indicating whether no item exposure controls should be
 	       implemented (\option{"none"}) or whether the CAT should use Sympson-Hetter exposure
@@ -135,13 +168,14 @@ catIrt(params, mod = c("brm", "grm"),
   \item{catTerm}{\bold{list:} a list of options for stopping/terminating the CAT, including:
 
   \enumerate{
-    \item \code{term}: a scalar/vector indicating the termination criterion/criteria.
-	      CATs can be terminated either through a fixed number of items
-	      (\option{"fixed"}) declared through the \command{n.max} argument; after a
-	      simulee's SEM dips below a threshold (\option{"var"}) declared through
-	      the \command{v.term} argument; and/or when a simulee falls into a category.
-          If more than one termination criteria is selected, the CAT will terminate after
-          successfully satisfying the \emph{first} of those for a given simulee.
+    \item \code{term}: a scalar/vector indicating the termination criterion/criteria. CATs can
+           be terminated either through a fixed number of items (\option{"fixed"}) declared
+           through the \command{n.max} argument; related to SEM of a simulee (\option{"precision"})
+           declared through the \command{p.term} argument; related to the test information of a
+           simulee at a particular point in the cat (\option{"info"}) declared through the
+           \command{i.term} argument; and/or when a simulee falls into a category. If more than
+           one termination criteria is selected, the CAT will terminate after successfully satisfying
+           the \emph{first} of those for a given simulee.
 	\item \code{score}: a character string indicating the \eqn{\theta} estimation method for all
 	      of the responses in the bank.  \command{score} is used to estimate \eqn{\theta} given
 	      the entire bank of item responses and parameter set.  If the theta estimated using
@@ -152,16 +186,39 @@ catIrt(params, mod = c("brm", "grm"),
           should "take" before \emph{any} of the termination criteria are checked.
     \item \code{n.max}: an \emph{integer} indicating the maximum number of items to administer
           before terminating the CAT.
-    \item \code{v.term}: a scalar indicating the maximum SEM of a simulee before terminating the
-           CAT \bold{only if} \command{term} is \option{"var"}.
+    \item \code{p.term}: a list indicating the parameters of a precision-based stopping rule,
+           only if \command{term} is \option{"precision"}, including:
+
+    \enumerate{
+      \item \code{method}: a character string indicating whether to terminate the CAT when the
+             SEM dips below a threshold (\option{"threshold"}) or changes less than a particular
+             amount (\option{"change"}).
+      \item \code{crit}: a scalar indicating either the maximum SEM of a simulee before
+             terminating the CAT or the maximum change in the simulee's SEM before terminating
+             the CAT.
+    }
+
+    \item \code{i.term}: a list indicating the parameters of a information-based stopping rule,
+           only if \command{term} is \option{"info"}, including:
+
+    \enumerate{
+      \item \code{method}: a character string indicating whether to terminate the CAT when FI
+             exceeds a threshold (\option{"threshold"}) or changes less than a particular
+             amount (\option{"change"}).
+      \item \code{crit}: a scalar indicating either the minimum FI of a simulee before
+             terminating the CAT or the maximum change in the simulee's FI before terminating
+             the CAT.
+    }
+
     \item \code{c.term}: a list indicating the parameters of a classification CAT, only if
            \command{term} is \option{"class"} or any of the selection methods are \command{at}
            one or more \option{"bounds"}, including:
 
     \enumerate{
       \item \code{method}: a scalar indicating the method used for a classification CAT.  As of
-            now, the classification CAT options are the Sequential Probability Ratio Test (\option{"SPRT"}),
-            the Generalized Likelihood Ratio (\option{"GLR"}), or the Confidence Interval method (\option{"CI"}).
+             now, the classification CAT options are the Sequential Probability Ratio Test
+             (\option{"SPRT"}), the Generalized Likelihood Ratio (\option{"GLR"}), or the Confidence 
+             Interval method (\option{"CI"}).
       \item \code{bounds}: a scalar, vector, or matrix of classification bounds.  If specified as a
              scalar, there will be one bound for each simulee at that value.  If specified as a
              \eqn{N}-dimensional vector, there will be one bound for each simulee.  If specified as a
@@ -186,10 +243,11 @@ catIrt(params, mod = c("brm", "grm"),
 
 }        
   \item{ddist}{\bold{function:} a function indicating how to calculate prior densities
-               for Bayesian estimation.  For instance, if you wish to specify a normal
-               prior, \code{ddist = dnorm}, and if you wish to specify a uniform prior,
-               \code{ddist = dunif}.  Note that it is standard in R to use \code{d}\ldots
-               to indicate a density.
+               for Bayesian estimation or particular item selection methods.  For instance,
+               if you wish to specify a normal prior, \code{ddist = dnorm}, and if you wish
+               to specify a uniform prior, \code{ddist = dunif}.  Note that it is standard in
+               R to use \code{d}\ldots to indicate a density.  See \code{\link{itChoose}} for
+               more information.
 }
   \item{which}{\bold{numeric:} a scalar or vector of integers between 1 and 4, indicating
                which plots to include.  The plots are as follows:
@@ -211,8 +269,8 @@ catIrt(params, mod = c("brm", "grm"),
              process and \emph{all} of their \eqn{\theta} estimates.  \command{ids} can
              also be "none" (or, equivalently, NULL) or "all".
 }
-  \item{CI}{\bold{numeric:} a scalar between 0 and 1 indicating the desired confidence
-             level plotted for the individual \eqn{\theta} estimates.
+  \item{conf.lev}{\bold{numeric:} a scalar between 0 and 1 indicating the desired confidence
+                  level plotted for the individual \eqn{\theta} estimates.
 }
   \item{legend}{\bold{logical:} TRUE or FALSE indicating whether the plot function should
                 display a legend on the plot.
@@ -239,9 +297,8 @@ a CAT represents a simple set of stages surrounded by a \command{while} loop
         For example, the classic item selection mechanism is picking an item such that it
         maximizes Fisher Information at the current estimate of \eqn{\theta_i}.  Frequently,
         content balancing, item constraints, or item exposure will be taken into consideration
-        at this point (aside from solely picking the "best item" for a given person).  More
-        sophisticated item constraints are not implemented in the current edition of \code{catIrt}.
-        See \code{\link{FI}} and \code{\link{KL}} for current item selection methods.
+        at this point (aside from solely picking the "best item" for a given person).
+        See \code{\link{itChoose}} for current item selection methods.
   \item Estimation: \eqn{\theta_i} is estimated based on updated information, usually relating
         to the just-selected item and the response associated with that item. In
         a post-hoc CAT, all of the responses already exist, but in a standard CAT, "item administration"
@@ -258,19 +315,19 @@ a CAT represents a simple set of stages surrounded by a \command{while} loop
         or a variable criterion (e.g. continuing until the observed SEM is below .3).  Other
         termination criteria relate to cut-point tests (e.g. certification tests, classification tests),
         that depend not solely on ability but on whether that ability is estimated to exceed a threshold.
-        \code{catIrt} terminates classification tests based on either the
-        Sequential Probability Ratio Test (SPRT) (see Eggen, 1999), the Generalized Likelihood Ratio (GLR)
-        (see Thompson, 2009), or the Confidence Interval Method (see Kingsbury & Weiss, 1983).  Essentially,
-        the SPRT compares the ratio of two likelihoods (e.g. the likelihood of the data given being in one category
-        vs the likelihood of the data given being in the other category, as defined by \eqn{B + \delta} and \eqn{B - \delta}
-        (where \eqn{B} separates the categories and \eqn{\delta} is the halfwidth of the indifference region)
-        and compares that ratio with a ratio of error rates (\eqn{\alpha} and \eqn{\beta}) (see Wald, 1945).  The
-        GLR uses the maximum likelihood estimate in place of either \eqn{B + \delta} or \eqn{B - \delta},
-        and the confidence interval method terminates a CAT if the confidence interval surrounding an estimate
-        of \eqn{\theta} is fully within one of the categories.
+        \code{catIrt} terminates classification tests based on either the Sequential Probability Ratio Test
+         (SPRT) (see Eggen, 1999), the Generalized Likelihood Ratio (GLR) (see Thompson, 2009), or the
+        Confidence Interval Method (see Kingsbury & Weiss, 1983).  Essentially, the SPRT compares the ratio
+        of two likelihoods (e.g. the likelihood of the data given being in one category vs the likelihood
+        of the data given being in the other category, as defined by \eqn{B + \delta} and
+        \eqn{B - \delta}(where \eqn{B} separates the categories and \eqn{\delta} is the halfwidth of the
+        indifference region) and compares that ratio with a ratio of error rates (\eqn{\alpha} and
+        \eqn{\beta}) (see Wald, 1945).  The GLR uses the maximum likelihood estimate in place of either
+        \eqn{B + \delta} or \eqn{B - \delta}, and the confidence interval method terminates a CAT if the
+        confidence interval surrounding an estimate of \eqn{\theta} is fully within one of the categories.
 }
 
-The CAT estimates \eqn{\theta_{i1}} (an initial point) based on \command{init.thet}, 
+The CAT estimates \eqn{\theta_{i1}} (an initial point) based on \command{init.theta}, 
 and terminates the entire simulation after sequentially terminating each simulee's CAT.
 }
 
@@ -285,8 +342,8 @@ The function \code{catIrt} returns a list (of class "catIrt") with the following
   \item{cat_info}{a vector of observed Fisher information based on the final CAT \eqn{\theta}
                   estimates and the item responses.
 }
-  \item{cat_sem}{a vector of observed SEM estimates based on the final CAT \eqn{\theta} estimates
-                 and the item responses.
+  \item{cat_sem}{a vector of observed SEM estimates (or posterior standard deviations) based on the
+                 final CAT \eqn{\theta} estimates and the item responses.
 }
   \item{cat_length}{a vector indicating the number of items administered to each simulee in the CAT
 }
@@ -348,32 +405,34 @@ Steven W. Nydick
 }
 
 \seealso{
-\code{\link{FI}}, \code{\link{KL}}, \code{\link{mleEst}}, \code{\link[catR]{randomCAT}},
-\code{\link{simIrt}}
+\code{\link{FI}}, \code{\link{itChoose}}, \code{\link{KL}}, \code{\link{mleEst}},
+\code{\link[catR]{randomCAT}}, \code{\link{simIrt}}
 }
 
 \examples{
+\dontrun{
+
 #########################
 # Binary Response Model #
 #########################
 set.seed(888)
 # generating random theta:
-thetas <- rnorm(50)
+theta <- rnorm(50)
 # generating an item bank under a 2-parameter binary response model:
 b.params <- cbind(a = runif(100, .5, 1.5), b = rnorm(100, 0, 2), c = 0)
 # simulating responses:
-b.resp <- simIrt(thetas = thetas, params = b.params, mod = "brm")$resp
+b.resp <- simIrt(theta = theta, params = b.params, mod = "brm")$resp
 
 
 ## CAT 1 ##
 # the typical, classic post-hoc CAT:
-catStart1 <- list(init.thet = 0, step.size = 3,
-                  select = "FI", at = "theta",
+catStart1 <- list(init.theta = 0, n.start = 5,
+                  select = "UW-FI", at = "theta",
                   n.select = 4, score = "step",
-                  n.it = 5, leave.after.MLE = TRUE)
-catMiddle1 <- list(select = "FI", at = "theta",
+                  step.size = 3, leave.after.MLE = TRUE)
+catMiddle1 <- list(select = "UW-FI", at = "theta",
                    n.select = 1, score = "MLE",
-                   int = c(-6, 6), expos = "none")
+                   range = c(-6, 6), expos = "none")
 catTerm1 <- list(term = "fixed", n.min = 10, n.max = 50)
 
 cat1 <- catIrt(params = b.params, mod = "brm",
@@ -400,17 +459,16 @@ par(mfrow = c(2, 1))
 plot(cat1, which = "none", ids = c(1, 30), ask = FALSE)
 par(mfrow = c(1, 1))
 
-\dontrun{
-
 ## CAT 2 ##
-# using KL rather than FI to select items:
+# using Fixed Point KL info rather than Unweighted FI to select items:
 catStart2 <- catStart1
 catMiddle2 <- catMiddle1
 catTerm2 <- catTerm1
 
-catMiddle2$select <- "KL"
+catMiddle2$select <- "FP-KL"
 catMiddle2$at <- "bounds"
-catTerm2$c.term <- list(bounds = 0, delta = .1)
+catMiddle2$delta <- .2
+catTerm2$c.term <- list(bounds = 0)
 cat2 <- catIrt(params = b.params, mod = "brm",
                resp = b.resp,
                catStart = catStart2,
@@ -420,9 +478,9 @@ cor(cat1$cat_theta, cat2$cat_theta)    # very close!
 
 
 ## CAT 3/4 ##
-# using "var" rather than "fixed" to terminate:
-catTerm1$term <- catTerm2$term <- "var"
-catTerm1$v.term <- catTerm2$v.term <- .3
+# using "precision" rather than "fixed" to terminate:
+catTerm1$term <- catTerm2$term <- "precision"
+catTerm1$p.term <- catTerm2$p.term <- list(method = "threshold", crit = .3)
 cat3 <- catIrt(params = b.params, mod = "brm",
                resp = b.resp,
                catStart = catStart1,
@@ -470,7 +528,7 @@ cat7 <- catIrt(params = b.params, mod = "brm", # much slower!
                catStart = catStart1,
                catMiddle = catMiddle7,
                catTerm = catTerm1)
-cor(cat1$cat_theta, cat7$cat_theta)    # pretty much the same
+cor(cat1$cat_theta, cat7$cat_theta)            # pretty much the same
 
 
 ## CAT 8 ##
@@ -493,12 +551,12 @@ cat8   # all positive values of "theta"
 catTerm9 <- list(term = c("fixed", "class"),
                  n.min = 10, n.max = 50,
                  c.term = list(method = "SPRT",
-                               bounds = cbind(runif(length(thetas), -1, 0),
-                                              runif(length(thetas), 0, 1)),
+                               bounds = cbind(runif(length(theta), -1, 0),
+                                              runif(length(theta), 0, 1)),
                                delta = .2,
                                alpha = .1, beta = .1))
 cat9 <- catIrt(params = b.params, mod = "brm",
-               resp = NULL, thetas = thetas,
+               resp = NULL, theta = theta,
                catStart = catStart1,
                catMiddle = catMiddle1,
                catTerm = catTerm9)
@@ -510,20 +568,21 @@ summary(cat9)   # see "... with Each Termination Criterion"
 # Graded Response Model #
 #########################
 # generating random theta
-thetas <- rnorm(201)
+theta <- rnorm(201)
 # generating an item bank under a graded response model:
 g.params <- cbind(a = runif(100, .5, 1.5), b1 = rnorm(100), b2 = rnorm(100),
                                            b3 = rnorm(100), b4 = rnorm(100))
 
 # the graded response model is exactly the same, only slower!
 cat10 <- catIrt(params = g.params, mod = "grm",
-                resp = NULL, thetas = thetas,
+                resp = NULL, theta = theta,
                 catStart = catStart1,
                 catMiddle = catMiddle1,
                 catTerm = catTerm1)
 
 # if there is more than 200 simulees, it doesn't print individual thetas:
 cat10
+
 }
 
 # play around with things - CATs are fun - a little frisky, but fun.

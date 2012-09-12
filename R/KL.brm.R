@@ -19,7 +19,7 @@ function( params,        # parameters over which to calculate
 # KL Information #
 #~~~~~~~~~~~~~~~~#
 
-  if( length(theta) == 1 ){
+  if( length(theta) == 1 & length(delta) == 1 ){
     p0 <- p.brm(params, theta - delta); p1 <- p.brm(params, theta + delta)
     q0 <- q.brm(params, theta - delta); q1 <- q.brm(params, theta + delta)
   }

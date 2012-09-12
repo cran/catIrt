@@ -12,9 +12,9 @@ indicating the half-width of an indifference region.
 }
 
 \usage{
-KL(params, theta, delta = .1)
-\method{KL}{brm}(params, theta, delta = .1)
-\method{KL}{grm}(params, theta, delta = .1)
+KL( params, theta, delta = .1 )
+\method{KL}{brm}( params, theta, delta = .1 )
+\method{KL}{grm}( params, theta, delta = .1 )
 }
 
 \arguments{
@@ -28,14 +28,14 @@ KL(params, theta, delta = .1)
                 matrix.  See \bold{Details} for more information.
 }
   \item{theta}{\bold{numeric:} a vector of ability values, one for each simulee.  When performing
-               a classification CAT, \command{theta} should be the boundary
-               points for which to choose the next item.
+               a classification CAT, \command{theta} should be the boundary points for which to
+               choose the next item.
 }
-  \item{delta}{\bold{numeric:} a scalar indicating the half-width of the indifference
-               region.  \code{KL} will estimate the divergence between
-               \eqn{\theta - \delta} and \eqn{\theta + \delta} using
-               \eqn{\theta + \delta} as the "true model."  See \bold{Details}
-               for more information.
+  \item{delta}{\bold{numeric:} a scalar or vector indicating the half-width of the indifference
+               \code{KL} will estimate the divergence between \eqn{\theta - \delta} and
+               \eqn{\theta + \delta} using \eqn{\theta + \delta} as the "true model."
+               If \command{delta} is a vector, then \code{KL} will use recycling to make the length
+               of \command{theta} and \command{delta} match. See \bold{Details} for more information.
 }
 }
 
@@ -52,8 +52,7 @@ is the expected log-likelihood gain when using the true model in place of an alt
 
 For the binary response model, KL-divergence for an item simplifies to the following:
 
-\deqn{ KL_j(\theta_2 || \theta_1)_j = p_j(\theta_2)\log\left[\frac{p_j(\theta_2)}{p_j(\theta_1)}\right]
-                                  + [1 - p_j(\theta_2)]\log\left[\frac{1 - p_j(\theta_2)}{1 - p_j(\theta_1)}\right]}{
+\deqn{ KL_j(\theta_2 || \theta_1)_j = p_j(\theta_2)\log\left[\frac{p_j(\theta_2)}{p_j(\theta_1)}\right] + [1 - p_j(\theta_2)]\log\left[\frac{1 - p_j(\theta_2)}{1 - p_j(\theta_1)}\right]}{
        KL_j(\theta_2 || \theta_1)_j = p_j(\theta_2)\log[p_j(\theta_2)/p_j(\theta_1)] + [1 - p_j(\theta_2)]\log[(1 - p_j(\theta_2))/(1 - p_j(\theta_1))]}
 
 where \eqn{p_{ij}} is the probability of response, as indicated in the help page for \code{\link{simIrt}}
@@ -64,8 +63,8 @@ For the graded response model, KL-divergence for an item simplifies to the follo
        KL_j(\theta_2 || \theta_1) = \sum_k{P_{jk}(\theta_2)\log[P_{jk}(\theta)2/P_{jk}(\theta_1)]}}
 
 where \eqn{P_{jk}(\theta_2)} is the probability of \eqn{\theta_2} responding in category k as
-indicated in the help page for \code{\link{simIrt}}. See Eggen (1999) as applied to classification CAT
-and van der Linden and Pashley (2010) more generally.
+indicated in the help page for \code{\link{simIrt}}. See Eggen (1999) as applied to classification
+CAT and van der Linden and Pashley (2010) more generally.
 
 Because of the properties of likelihood functions in item response models, test information
 is simply the sum of the item informations, or:
@@ -73,12 +72,12 @@ is simply the sum of the item informations, or:
 \deqn{ KL(\theta_2 || \theta_1) = \sum_jKL_j(\theta_2 || \theta_1)}
 
 \code{KL} is frequently used to select items in a classification CAT where the hypotheses (e.g. being
-in one category versus another category are well defined).  If "being in the upper category" is \eqn{\theta_2} and
-"being in the lower category" is \eqn{\theta_1}, then \eqn{\theta_2 = B + \delta} and \eqn{\theta_1 = B - \delta}
-where \eqn{B} is the boundary separating the lower category from the upper category.  Conversely, if using
-\code{KL} to select items in a precision CAT, then \eqn{\theta_2 = \hat{\theta}_i + \delta} and
-\eqn{\theta_1 = \hat{\theta}_i} where \eqn{\hat{\theta}_i} is the current, \emph{best} estimate of \eqn{\theta}.
-See \code{\link{catIrt}} for more information.
+in one category versus another category are well defined).  If "being in the upper category" is
+\eqn{\theta_2} and "being in the lower category" is \eqn{\theta_1}, then \eqn{\theta_2 = B + \delta}
+and \eqn{\theta_1 = B - \delta} where \eqn{B} is the boundary separating the lower category from the
+upper category.  Conversely, if using \code{KL} to select items in a precision CAT, then
+\eqn{\theta_2 = \hat{\theta}_i + \delta} and \eqn{\theta_1 = \hat{\theta}_i} where \eqn{\hat{\theta}_i}
+is the current, \emph{best} estimate of \eqn{\theta}. See \code{\link{catIrt}} for more information.
 }
 
 \value{
@@ -86,7 +85,8 @@ See \code{\link{catIrt}} for more information.
   \item{item}{either: (1) a \eqn{J \times N} matrix of item information for each simulee to
               each item; (2) a \eqn{J}-length vector of item information for one simulee to
               each item; or (3) an \eqn{N}-length vector of item information for all simulees
-              to one item, depending on the dimensions of \command{params} and \command{thet}.
+              to one item, depending on the dimensions of \command{params}, \command{theta}, annd
+              \command{delta}.
 }
   \item{test}{an \eqn{N}-length vector of test information, one for each simulee. Test
               information is the sum of item information across items.  See \bold{Details} for
@@ -111,11 +111,11 @@ Kullback-Leibler divergence in IRT is not \emph{true} KL divergence, as the expe
 is with respect to a model that is not necessarily true.  Furthermore, it is not reciprocal,
 as \eqn{KL(\theta_1 || \theta_2) \neq KL(\theta_2 || \theta_1)}.  There have been
 other KL-based item selection measures proposed, including global information.  See
-Eggen (1999).
+Eggen (1999) and \code{\link{itChoose}}.
 }
 
 \seealso{
-\code{\link{catIrt}}, \code{\link{FI}}, \code{\link{simIrt}}
+\code{\link{catIrt}}, \code{\link{FI}}, \code{\link{itChoose}}, \code{\link{simIrt}}
 }
 
 \examples{
@@ -175,7 +175,7 @@ theta <- rnorm(20)
 g.params <- cbind(runif(100, .5, 1.5), rnorm(100), rnorm(100),
                                        rnorm(100), rnorm(100), rnorm(100))
 # simulating responses (so that the parameters are ordered - see simIrt)
-g.params <- simIrt(theta = theta, params = g.params, mod = "grm")$params
+g.params <- simIrt(theta = theta, params = g.params, mod = "grm")$params[ , -1]
 
 # we can calculate KL information as before, noting that class(g.params) is "grm"
 class(g.params)     # so we don't need to set it ourselves

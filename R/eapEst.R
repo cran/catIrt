@@ -1,10 +1,10 @@
 eapEst <-
 function(resp,                             # The vector of responses
          params,                           # The item parameters
-         int = c(-6, 6),                   # The limits of integration
+         range = c(-6, 6),                 # The limits of integration
          mod = c("brm", "grm"),            # The model                        
-         ddist = dnorm, quad = 33, ... ){  # The prior distribution stuff:
-
+         ddist = dnorm, quad = 33, ... )   # The prior distribution stuff:
+{
   require(sfsmisc)
   
 # First turn params into a matrix:
@@ -41,10 +41,10 @@ function(resp,                             # The vector of responses
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
 # Indicate the lower/upper boundary of integration:
-  if( is.null(int) )
-    int <- c(-6, 6)
+  if( is.null(range) )
+    range <- c(-6, 6)
 
-  l <- int[1]; u <- int[2]
+  l <- range[1]; u <- range[2]
   
 # Make sure that the lower/upper points of integration is within the legal range:
   tmp.x <- seq(l, u, by = .01)
@@ -54,7 +54,8 @@ function(resp,                             # The vector of responses
   l <- min( tmp.x[signif(tmp.y) != 0 & !is.na(tmp.y)] )
   u <- max( tmp.x[signif(tmp.y) != 0 & !is.na(tmp.y)] )
   
-  est <- NULL
+  est <- NULL # a vector for estimates
+  sem <- NULL # a vector for posterior var/sds
 
 # The Likelihood function used in the EAP integration:
   LikFun <- function( ... )
@@ -63,31 +64,35 @@ function(resp,                             # The vector of responses
 # For each person:
   for( i in 1:dim(resp)[1] ){
     
-# Set up the numerator and denominator of integral:
-    eap.num <- function( theta ) theta * LikFun(theta = theta, u = resp[i, ], x = params) * ddist(x = theta, ... )
-    eap.den <- function( theta )         LikFun(theta = theta, u = resp[i, ], x = params) * ddist(x = theta, ... )
+# Set up the numerators and denominator of integral:
+    eap.den <- function( theta )           LikFun(theta = theta, u = resp[i, ], x = params) * ddist(x = theta, ... )
+    eap.num <- function( theta ) theta   * LikFun(theta = theta, u = resp[i, ], x = params) * ddist(x = theta, ... )
+    sem.num <- function( theta ) theta^2 * LikFun(theta = theta, u = resp[i, ], x = params) * ddist(x = theta, ... )
     
 # Set up the bounds of integration:
     X  <- seq(l, u, length = quad)
-    Y1 <- eap.num( X )
-    Y2 <- eap.den( X )
+    Y1 <- eap.den( X )
+    Y2 <- eap.num( X )
+    Y3 <- sem.num( X )
     
-# And integrate:
-    est[i] <- integrate.xy(X, Y1) / integrate.xy(X, Y2)
+# And integrate (sem is the variance at this point):
+    est[i] <- ( integrate.xy(X, Y2) / ( const <- integrate.xy(X, Y1) ) )
+    sem[i] <- ( integrate.xy(X, Y3) / const ) - est[i]^2
   
   } # END FOR LOOP
   
-# Round the estimated value to three/four? decimal places:          
+# Round the estimated value to three/four? decimal places and find the sem:          
   est <- round(est, digits = 4)
+  sem <- sqrt(sem)
   
-# And pull out the information as well as the SEM:
+# And pull out the information:
   info <- get(paste("FI.", mod, sep = ""))(params = params,
                                            theta = est,
                                            type = "observed",
-                                           resp = resp)
+                                           resp = resp)$test
   
 # NOTE: NEED TO ADD THE ACTUAL INFORMATION/SEM CORRESPONDING TO EAP?
   
-  list(theta = est, info = info$test, sem = info$sem)
+  list(theta = est, info = info, sem = sem)
   
 } # END eapEst FUNCTION

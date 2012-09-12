@@ -5,6 +5,58 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
 ****************************************
+* Changes to catIrt 0.3-0 (2012-09-12) *
+****************************************
+
+  o  Added more termination criteria, including when the Fisher Information
+     exceeds a particular threshold or when either the Fisher Information or
+     SEM change less than a particular amount.  Note that the original v.term
+     argument is now obsolete and replaced with p.term and i.term arguments.
+
+  o  Added WFI (Weighted Fisher Information) function (not exported) and added
+     two item selection criteria (Posterior WFI and Likelihood WFI) which both
+     use the WFI function.
+
+  o  Added IKL (Integrated KL Divergence) function (not exported) and added
+     two item selection criteria (Fixed Integral KL and Variable Integral KL)
+     which both use the IKL function.
+
+  o  Changed the arguments to itChoose and exported the function so that anybody
+     can use itChoose in his/her own CAT algorithm.
+
+  o  Changed simIrt to return params with the item numbers cbind-ed onto the front
+     of them, which is required for the itChoose function.
+
+  o  The "var" option of catTerm$term no longer exists and is replaced with
+     "precision" and "info".
+
+  o  Changed catMiddle$int to catMiddle$range to reduce confusion.
+
+  o  Changed the argument CI to conf.lev in plot.catIrt so that catIrt and
+     plot.catIrt have consistent names for confidence intervals.
+
+  o  Changed thetas in catIrt and simIrt to theta to keep consistency with other
+     functions.
+
+  o  Changed catStart$init.thet to catStar$init.theta to reduce confusion.
+
+  o  Plotting the individual CAT progression is more customizable.
+
+  o  The bank info functions/SEM functions are no longer able to be customized
+     to prevent plotting conflicts.
+
+  o  Fixed the SEM for WLE/BME/EAP estimation to be appropriate for the particular
+     estimation methods, and added numDeriv as a required package for BME
+     variance estimation.
+
+  o  Exported [.mod and [<-.mod functions outside of the catIrt function, where
+     mod is any of the IRT models.
+
+  o  Changed a lot of the manual entries for clarity and consistency, and added a
+     manual entry for the itChoose function.
+
+
+****************************************
 * Changes to catIrt 0.2-1 (2012-07-03) *
 ****************************************
   o  The format of the catIrt input function was rewritten a bit.

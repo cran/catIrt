@@ -5,16 +5,19 @@ function(params, resp, mod,
          cat_info, cat_sem,
          catStart,
          catMiddle,
-         catTerm = list(term  = c("fixed", "var", "class"),
-                        score = c("MLE", "WLE", "BME", "EAP"),
-                        n.min = 5, n.max = 50,
-                        v.term = .25,
-                        c.term = list(method   = c("SPRT", "GLR", "CI"),
-                                      bounds   = c(-1, 1),
-                                      categ    = c(0, 1, 2),
-                                      delta    = .1,
-                                      alpha    = .05, beta = .05,
-                                      conf.lev = .95)),
+         catTerm   = list( term  = c("fixed", "precision", "info", "class"),
+                           score = c("MLE", "WLE", "BME", "EAP"),
+                           n.min = 5, n.max = 50,
+                           p.term = list(method   = c("threshold", "change"),
+                                         crit     = .25),
+                           i.term = list(method   = c("threshold", "change"), 
+                                         crit     = 2),
+                           c.term = list(method   = c("SPRT", "GLR", "CI"),
+                                         bounds   = c(-1, 1),
+                                         categ    = c(0, 1, 2),
+                                         delta    = .1,
+                                         alpha    = .05, beta = .05,
+                                         conf.lev = .95)),
          ... )
 {
                                      
@@ -58,15 +61,17 @@ function(params, resp, mod,
 
   dec <- stpRule(method    = catTerm$term,       # method used to terminate
                 
-                 min.it    = catTerm$n.min,      # minimum number of items
-                 it.left   = sum(!it_flags),     # number of items left in the bank
+                 it_min    = catTerm$n.min,      # minimum number of items
+                 it_left   = sum(!it_flags),     # number of items left in the bank
                  
-                 it.crit   = catTerm$n.max,      # maximum number of items to give
-                 se.crit   = catTerm$v.term,     # variable termination criterion
+                 it_crit   = catTerm$n.max,      # maximum number of items to give
+                 se_crit   = catTerm$p.term,     # precision termination criterion
+                 info_crit = catTerm$i.term,     # info termination criterion
                  
-                 n.it      = j,                  # number of items given to this point
-                 se.obs    = cat_sem[j],         # standard error of measurement to this point
-                 categ.est = categ)              # estimated classification to this point    
+                 it_obs    = j,                  # number of items given to this point
+                 se_obs    = cat_sem,            # standard errors of measurement
+                 info_obs  = cat_info,           # observed information
+                 categ_est = categ)              # estimated classification to this point    
 
 #####
 # 3 # (CLASSIFICATION UNDER TOTAL/FIXED/VARIABLE)

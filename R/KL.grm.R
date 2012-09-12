@@ -1,6 +1,6 @@
 KL.grm <-
 function( params,       # parameters over which to calculate
-          theta,        # value of theta
+          theta,        # value(s) of theta
           delta = .1)   # the indifference region specification
 {
   
@@ -23,7 +23,7 @@ function( params,       # parameters over which to calculate
 a <- params[ , 1, drop = FALSE]; b <- params[ , -1, drop = FALSE]
 
 # If there is only ONE theta:
-  if( length(theta) == 1 ){
+  if( length(theta) == 1 & length(delta) == 1 ){
         
     info <- 0
         

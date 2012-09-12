@@ -1,8 +1,8 @@
 FI.brm <-
-function(params,                              # parameters over which to calculate
-         theta,                               # values/estimates of theta
-         type = c("expected", "observed"),    # which information to calculate
-         resp = NULL)                         # a response vector/matrix
+function( params,                            # parameters over which to calculate
+          theta,                             # values/estimates of theta
+          type = c("expected", "observed"),  # which information to calculate
+          resp = NULL )                      # a response vector/matrix                         
 {
   
 # First, make sure that resp is NULL if type is "expected"

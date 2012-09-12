@@ -1,7 +1,7 @@
 simIrt <-
-function( thetas = seq(-3, 3, by = .1), # a scalar/vector of theta values
-          params,                       # the item parameters
-          mod = c("brm", "grm") )       # the model (binary response model or graded response model for now)
+function( theta = seq(-3, 3, by = .1), # a scalar/vector of theta values
+          params,                      # the item parameters
+          mod = c("brm", "grm") )      # the model (binary response model or graded response model for now)
 {
 
 #~~~~~~~~~~~~~~~~~#
@@ -11,8 +11,8 @@ function( thetas = seq(-3, 3, by = .1), # a scalar/vector of theta values
 # We need to make sure that the arguments are OK:
 
 ## 1 ## (Make sure that theta is a numeric vector)
-  if( !is.null( dim(thetas) ) | mode(thetas) != "numeric" )
-    stop( "thetas must be a numeric vector of person/simulee parameters" )
+  if( !is.null( dim(theta) ) | mode(theta) != "numeric" )
+    stop( "theta must be a numeric vector of person/simulee parameters" )
     
 ## 2 ## (Make sure that params is a numeric matrix)
   if( mode(params) != "numeric" & !inherits(params, "matrix") )
@@ -58,7 +58,11 @@ function( thetas = seq(-3, 3, by = .1), # a scalar/vector of theta values
 #~~~~~~~~~~~~~~~~~~~~~~#
 
 # Call C to simulate responses to the model ("brm" or "grm" or others)
-  sim <- .Call(mod, thetas, params)                    
+  sim <- .Call(mod, theta, params)
+  
+# Add the item number as the first column of params:
+  params              <- cbind(1:nrow(params), params)
+  colnames(params)[1] <- "item"               
     
 # Set the class according to the model:
 #  a) We want the prime/first class to be "brm", "grm", or whatever model.
@@ -67,22 +71,22 @@ function( thetas = seq(-3, 3, by = .1), # a scalar/vector of theta values
   class(sim)    <- c(mod, "matrix")
   class(params) <- c(mod, "matrix")
 
-  ret <- list(resp = sim, params = params, thetas = thetas)
+  ret <- list(resp = sim, params = params, theta = theta)
   
 # The above two lines make the code somewhat easy to generalize the model.
 
-  if(mod == "brm" & length(thetas) == 1){
+  if(mod == "brm" & length(theta) == 1){
     cat("\nBinary response model simulation:\n   ",
-         length(thetas), " simulee, ",  nrow(params), " items\n\n")
+         length(theta), " simulee, ",  nrow(params), " items\n\n")
   } else if(mod == "brm"){
      cat("\nBinary response model simulation:\n   ",
-         length(thetas), " simulees, ", nrow(params), " items\n\n")
-  } else if(mod == "grm" & length(thetas) == 1){
+         length(theta), " simulees, ", nrow(params), " items\n\n")
+  } else if(mod == "grm" & length(theta) == 1){
     cat("\nGraded response model simulation:\n   ",
-         length(thetas), " simulee, ",  nrow(params), " items, ", ncol(params), " levels per item\n\n")
+         length(theta), " simulee, ",  nrow(params), " items, ", ncol(params), " levels per item\n\n")
   } else if(mod == "grm"){
     cat("\nGraded response model simulation:\n   ",
-         length(thetas), " simulees, ", nrow(params), " items, ", ncol(params), " levels per item\n\n")
+         length(theta), " simulees, ", nrow(params), " items, ", ncol(params), " levels per item\n\n")
   } # END ifelse STATEMENTS
                      
   return(ret)

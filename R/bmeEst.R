@@ -1,7 +1,7 @@
 bmeEst <-
 function(resp,                         # The vector of responses
          params,                       # The item parameters
-         int = c(-6, 6),               # The integer to maximize over
+         range = c(-6, 6),             # The integer to maximize over
          mod = c("brm", "grm"),        # The model
          ddist = dnorm, ... ){         # The prior distribution stuff:
 
@@ -38,19 +38,21 @@ function(resp,                         # The vector of responses
 #~~~~~~~~~~~~~~~~~~~~#
 
 # Indicate the lower/upper boundary of the search:
-  if( is.null(int) )
-    int <- c(-6, 6)
+  if( is.null(range) )
+    range <- c(-6, 6)
 
-  l <- int[1]; u <- int[2]
+  l <- range[1]; u <- range[2]
   
-  est <- NULL
+  est <- NULL # a vector for estimates
+  hes <- NULL # a vector for the hessian of the prior
   
 # Then, maximize the loglikelihood function over that interval for each person:
   for( i in 1:dim(resp)[1] ){
     likFun <- paste("logLik.", mod, sep = "")
     est[i] <- optimize( get(likFun), lower = l, upper = u, maximum = TRUE,
                         x = params, u = resp[i, ], type = "BME",
-                        ddist = ddist, ... )$max
+                        ddist = ddist, ... )$max                    
+    hes[i] <- hessian(func = function(x, ... ) log( ddist(x, ... ) ), x = est[i], method = "Richardson", ... )
   }
 
 # Note --> it's finding local maxima --> how do I get away from that?
@@ -58,15 +60,16 @@ function(resp,                         # The vector of responses
 # Round the estimated value to three/four? decimal places:          
   est <- round(est, digits = 4)
 
-# And pull out the information as well as the SEM:
+# And pull out the information as well as find the SEM:
   info <- get(paste("FI.", mod, sep = ""))(params = params,
                                            theta = est,
                                            type = "observed",
-                                           resp = resp)
+                                           resp = resp)$test
+  sem  <- (info - hes)^(-1/2) # see Keller (p. 10)
   
 # NOTE: NEED TO ADD THE ACTUAL INFORMATION/SEM CORRESPONDING TO BME?
   
-  list(theta = est, info = info$test, sem = info$sem)
+  list(theta = est, info = info, sem = sem)
   
 } # END bmeEst FUNCTION
 

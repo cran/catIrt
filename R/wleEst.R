@@ -1,7 +1,7 @@
 wleEst <-
 function(resp,                         # The vector of responses
          params,                       # The item parameters
-         int = c(-6, 6),               # The integer to maximize over
+         range = c(-6, 6),             # The integer to maximize over
          mod = c("brm", "grm"),        # The model
          ...){
 
@@ -37,18 +37,21 @@ function(resp,                         # The vector of responses
 #~~~~~~~~~~~~~~~~~~~~~~~~~#
 
 # Indicate the lower/upper boundary of the search:
-  if( is.null(int) )
-    int <- c(-6, 6)
+  if( is.null(range) )
+    range <- c(-6, 6)
 
-  l <- int[1]; u <- int[2]
+  l <- range[1]; u <- range[2]
   
-  est <- NULL
+  est <- NULL # a vector for estimates
+  d   <- NULL # a vector of corrections
   
 # Then, maximize the loglikelihood function over that interval for each person:
   for( i in 1:dim(resp)[1] ){
     lderFun <- paste("lder1.", mod, sep = "")
     est[i]  <- uniroot( get(lderFun), lower = l, upper = u,
                         x = params, u = resp[i, ], type = "WLE")$root
+    d[i]    <- { get(lderFun)(u = resp[i, ], x = params, theta = est[i], type = "WLE") -
+    	             get(lderFun)(u = resp[i, ], x = params, theta = est[i], type = "MLE") }
   } # END for LOOP
                           
 # Round the estimated value to three/four? decimal places:          
@@ -58,11 +61,12 @@ function(resp,                         # The vector of responses
   info <- get(paste("FI.", mod, sep = ""))(params = params,
                                            theta = est,
                                            type = "observed",
-                                           resp = resp)
+                                           resp = resp)$test
+  sem <- sqrt( (info + d^2)/info^2 ) # see Warm (p. 449)
   
 # NOTE: NEED TO ADD THE ACTUAL INFORMATION/SEM CORRESPONDING TO WLE?
   
-  list(theta = est, info = info$test, sem = info$sem)
+  list(theta = est, info = info, sem = sem)
   
 } # END wleEst FUNCTION
 

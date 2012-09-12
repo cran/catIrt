@@ -230,20 +230,25 @@ function(x, digits = max(3, getOption("digits") - 3), ... ){
       	          }
 
       s.select <- switch( y$mod$catStart$select,
-                          random = "randomly",
-                          FI     = "by maximum Fisher information at",
-                          KL     = "by Kullback-Leibler divergence at" )
+                          "UW-FI"  = "by maximizing Fisher information at",
+                          "LW-FI"  = "by maximizing Likelihood-Weighted Fisher information",
+                          "PW-FI"  = "by maximizing Posterior-Weighted Fisher information",
+                          "FP-KL"  = "by maximizing Fixed Pointwise Kullback-Leibler divergence at",
+                          "VP-KL"  = "by maximizing Variable Pointwise Kullback-Leibler divergence at",
+                          "FI-KL"  = "by maximizing Fixed Integrated Kullback-Leibler divergence at",
+                          "VI-KL"  = "by maximizing Variable Integrated Kullback-Leibler divergence at",
+                          "random" = "randomly" )
                        
       if( y$mod$catStart$select != "random" ){
         s.at   <- switch( y$mod$catStart$at,
                           theta  = " theta",
-                          bounds = " (a) fixed point(s)/bound(s)" )
+                          bounds = " (a) fixed point(s)" )
       } else{
         s.at   <- NULL
       } # END ifelse STATEMENT
                        
       s.score  <- switch( y$mod$catStart$score,
-                          fixed  = paste("a fixed value of ", y$mod$catStart$init.thet, sep = ""),
+                          fixed  = paste("a fixed value of ", y$mod$catStart$init.theta, sep = ""),
                           step   = paste("increasing or decreasing theta by ", y$mod$catStart$step.size, sep = ""),
                           random = "randomly",
                           WLE    = "Weighted Likelihood (WL) estimation",
@@ -255,14 +260,19 @@ function(x, digits = max(3, getOption("digits") - 3), ... ){
 #############
         
       m.select <- switch( y$mod$catMiddle$select,
-                          random = "randomly",
-                          FI     = "by maximum Fisher information at",
-                          KL     = "by Kullback-Leibler divergence at" )
+                          "UW-FI"  = "by maximizing Fisher information at",
+                          "LW-FI"  = "by maximizing Likelihood-Weighted Fisher information",
+                          "PW-FI"  = "by maximizing Posterior-Weighted Fisher information",
+                          "FP-KL"  = "by maximizing Fixed Pointwise Kullback-Leibler divergence at",
+                          "VP-KL"  = "by maximizing Variable Pointwise Kullback-Leibler divergence at",
+                          "FI-KL"  = "by maximizing Fixed Integrated Kullback-Leibler divergence at",
+                          "VI-KL"  = "by maximizing Variable Integrated Kullback-Leibler divergence at",
+                          "random" = "randomly" )
                        
       if( y$mod$catMiddle$select != "random" ){
         m.at   <- switch( y$mod$catMiddle$at,
                           theta  = " theta",
-                          bounds = " (a) fixed point(s)/bound(s)" )
+                          bounds = " (a) fixed point(s)" )
       } else{
         m.at   <- NULL
       } # END ifelse STATEMENT
@@ -285,10 +295,13 @@ function(x, digits = max(3, getOption("digits") - 3), ... ){
       } # END ifelse STATEMENT
                        
       term    <- switch( y$cat_term[id.i],
-                         total = "all of the items in the bank.",
-                         fixed = paste("a fixed number of ", y$mod$catTerm$n.max, " items.", sep = ""),
-                         var   = paste("the ", sem, " was below ", y$mod$catTerm$v.term, ".", sep = ""),
-                         class = paste("a classification decision of '", y$cat_categ[id.i], "' was made.", sep = "") )
+                         total       = "all of the items in the bank.",
+                         fixed       = paste("a fixed number of ", y$mod$catTerm$n.max, " items.", sep = ""),
+                         se_thresh   = paste("the ", sem, " was below ", y$mod$catTerm$p.term$crit, ".", sep = ""),
+                         se_change   = paste("the ", sem, " changed less than ", y$mod$catTerm$p.term$crit, " between two successive items.", sep = ""),
+                         fi_thresh   = paste("Fisher Information was above ", y$mod$catTerm$i.term$crit, ".", sep = ""),
+                         fi_change   = paste("Fisher Information changed less than ", y$mod$catTerm$i.term$crit, " between two successive items.", sep = ""),
+                         class       = paste("a classification decision of '", y$cat_categ[id.i], "' was made.", sep = "") )
 
 ######################
 # Printing CAT Stuff #

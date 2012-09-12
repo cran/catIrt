@@ -4,16 +4,21 @@ useDynLib(catIrt)
 # Main CAT Functions:
 export(catIrt, simIrt)
 
-# Information Functions:
+# Information/Item Selection Functions:
 export(FI, FI.brm, FI.grm)
 export(KL, KL.brm, KL.grm)
+export(itChoose)
 
 # Estimation Functions:
 export(mleEst, wleEst, bmeEst, eapEst)
 
-# Exposure Control Functions:
-# export(sympHet)
+# S3 Methods ("[.")
+S3method("[", brm)
+S3method("[", grm)
 
+# S3 Methods ("[.<-")
+S3method("[<-", brm)
+S3method("[<-", grm)
 
 # S3 Methods (FI):
 S3method(FI, default)

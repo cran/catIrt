@@ -1,7 +1,7 @@
 mleEst <-
 function(resp,                         # The vector of responses
          params,                       # The item parameters
-         int = c(-6, 6),               # The integer to maximize over
+         range = c(-6, 6),             # The integer to maximize over
          mod = c("brm", "grm"),        # The model
          ... ){
 
@@ -37,12 +37,12 @@ function(resp,                         # The vector of responses
 #~~~~~~~~~~~~~~~~~~~~~~~~#
 
 # Indicate the lower/upper boundary of the search:
-  if( is.null(int) )
-    int <- c(-6, 6)
+  if( is.null(range) )
+    range <- c(-6, 6)
 
-  l <- int[1]; u <- int[2]
+  l <- range[1]; u <- range[2]
   
-  est <- NULL
+  est <- NULL # a vector for estimates
   
 # Then, maximize the loglikelihood function over that interval for each person:
     for( i in 1:dim(resp)[1] ){
