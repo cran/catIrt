@@ -47,12 +47,7 @@ function(u, x, theta,
     
     logLik <- sum(logLik)
     
-  } # END if STATEMENT
-
-
-# If thet is a matrix, we need to use the apply command:
-
-  else{
+  } else{
     
     logLik <- 0
     
@@ -86,9 +81,9 @@ function(u, x, theta,
       
     } # END for LOOP
             
-    logLik <- apply(logLik, MARGIN = 1, FUN = sum)
+    logLik <- rowSums(logLik)
     
-  } # END else STATEMENT
+  } # END ifelse STATEMENT
 
 
 ## Now, the Bayesian part: ##

@@ -13,8 +13,10 @@ itChoose( left_par, mod = c("brm", "grm"),
           select = c("UW-FI", "LW-FI", "PW-FI",
                      "FP-KL", "VP-KL", "FI-KL", "VI-KL",
                      "random"),
-          at = c("theta", "bounds"), delta = NULL, bounds = NULL,
-          range = c(-6, 6), ddist = dnorm, quad = 33, ... )
+          at = c("theta", "bounds"),
+          range = c(-6, 6), it.range = NULL,
+          delta = NULL, bounds = NULL,
+          ddist = dnorm, quad = 33, ... )
 }
 
 \arguments{
@@ -86,6 +88,14 @@ itChoose( left_par, mod = c("brm", "grm"),
 }
   \item{at}{\bold{character:} a character string indicating where to select items.
 }
+  \item{range}{\bold{numeric:} a 2-element numeric vector indicating the range of values
+              that \code{itChoose} should average over if \command{select} equals
+              \option{"LW-FI"} or \option{"PW-FI"}.
+}
+  \item{it.range}{\bold{numeric:} Either a 2-element numeric vector indicating the minimum
+                  and maximum allowed difficulty parameters for selected items (only if \command{mod}
+                  is equal to \option{"brm"}) or NULL indicating no item parameter restrictions.
+}
   \item{delta}{\bold{numeric:} a scalar indicating the multiplier used in item selection
               if a Kullback-Leibler method is chosen.  For fixed-point KL divergence,
               \command{delta} is frequently .1 or .2, whereas in variable-point KL divergence,
@@ -93,10 +103,6 @@ itChoose( left_par, mod = c("brm", "grm"),
 }
   \item{bounds}{\bold{numeric:} a vector of fixed-points/bounds from which to select items
                if \command{at} equals \option{"bounds"}.
-}
-  \item{range}{\bold{numeric:} a 2-element numeric vector indicating the range of values
-              that \code{itChoose} should average over if \command{select} equals
-              \option{"LW-FI"} or \option{"PW-FI"}.
 }
   \item{ddist}{\bold{function:} a function indicating how to calculate prior densities
               if \command{select} equals \option{"PW-FI"} (i.e., weighting Fisher information
@@ -195,7 +201,7 @@ Veerkamp, W. J. J., & Berger, M. P. F.  (1997).  Some new item selection criteri
 }
 
 \author{
-Steven W. Nydick
+Steven W. Nydick <nydic001@umn.edu>
 }
 
 \seealso{

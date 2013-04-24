@@ -2,8 +2,7 @@ lder2.grm <-
 function(xu, theta){
     
 # Dividing into response and parameters
-  if( is.null( dim(xu) ) )
-    { xu <- t(xu) }
+  xu <- rbind(xu)
 
   u <- xu[ , dim(xu)[2] ]; a <- xu[ , 1, drop = FALSE]; b <- xu[ , -c(1, dim(xu)[2]), drop = FALSE]
   

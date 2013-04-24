@@ -6,14 +6,12 @@ function(resp,                         # The vector of responses
          ... ){
 
 # First turn params into a matrix:
-  if( is.null( dim(params) ) )                       # if it's a vector ... -->
-    params <- t(params)                              # ... --> turn it into a matrix
-    
+  params <- rbind(params)
+   
 # And turn response into a matrix:
-  if( !is.null(resp) & is.null( dim(resp) ) )                    # if it's a vector ... -->
-    resp <- { if( dim(params)[1] > 1 ) matrix( resp, nrow = 1 )  # ... --> turn it into a multi-column matrix,
-              else                     matrix( resp, ncol = 1) } # ... --> or a 1-column matrix
-
+  resp <- { if( dim(params)[1] > 1 ) rbind(resp)   # ... --> turn it into a multi-column matrix,
+            else                     cbind(resp) } # ... --> or a 1-column matrix
+  
 #~~~~~~~~~~~~~~~~~#
 # Argument Checks #
 #~~~~~~~~~~~~~~~~~#
@@ -45,12 +43,12 @@ function(resp,                         # The vector of responses
   est <- NULL # a vector for estimates
   
 # Then, maximize the loglikelihood function over that interval for each person:
-    for( i in 1:dim(resp)[1] ){
-      likFun <- paste("logLik.", mod, sep = "")
-      est[i] <- optimize( get(likFun), lower = l, upper = u, maximum = TRUE,
-                          x = params, u = resp[i, ],
-                          type = "MLE" )$max
-    } # END for LOOP
+  for( i in 1:dim(resp)[1] ){
+    likFun <- paste("logLik.", mod, sep = "")
+    est[i] <- optimize( get(likFun), lower = l, upper = u, maximum = TRUE,
+                        x = params, u = resp[i, ],
+                        type = "MLE" )$max
+  } # END for LOOP
                 
 # Round the estimated value to three/four? decimal places:                      
   est <- round(est, digits = 4)

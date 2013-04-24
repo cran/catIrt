@@ -71,6 +71,7 @@ function(params, resp, mod,
                  it_obs    = j,                  # number of items given to this point
                  se_obs    = cat_sem,            # standard errors of measurement
                  info_obs  = cat_info,           # observed information
+                 
                  categ_est = categ)              # estimated classification to this point    
 
 #####

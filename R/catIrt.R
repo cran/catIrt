@@ -1,12 +1,5 @@
 # This function will be the main CAT function.
 
-# It will have to do several things:
-#   1) Read in item parameters,
-#   2) Simulate CAT responses based on IP and distribution,
-#   3) Select items:
-#   4) Estimate theta (after preliminary items?):
-#   5) Terminate the test based on category or precision:
-
 catIrt <- function( params, mod = c("brm", "grm"),
                     resp      = NULL,
                     theta     = NULL,
@@ -14,16 +7,21 @@ catIrt <- function( params, mod = c("brm", "grm"),
                                       select = c("UW-FI", "LW-FI", "PW-FI",
                                                  "FP-KL", "VP-KL", "FI-KL", "VI-KL",
                                                  "random"),
-                                      at = c("theta", "bounds"), delta = .1,
-                                      n.select = 1,
-                                      score = c("fixed", "step", "random", "WLE", "BME", "EAP"),
+                                      at = c("theta", "bounds"),
+                                      it.range = NULL, n.select = 1,
+                                      delta = .1,
+                                      score = c("fixed", "step", "random",
+                                                "WLE", "BME", "EAP"),
+                                      range = c(-1, 1),
                                       step.size = 3, leave.after.MLE = FALSE ),
                     catMiddle = list( select = c("UW-FI", "LW-FI", "PW-FI",
                                                  "FP-KL", "VP-KL", "FI-KL", "VI-KL",
                                                  "random"),
-                                      at = c("theta", "bounds"), delta = .1,
-                                      n.select = 1,
-                                      score = c("MLE", "WLE", "BME", "EAP"), range = c(-6, 6),
+                                      at = c("theta", "bounds"),
+                                      it.range = NULL, n.select = 1,
+                                      delta = .1,
+                                      score = c("MLE", "WLE", "BME", "EAP"),
+                                      range = c(-6, 6),
                                       expos = c("none", "SH") ),
                     catTerm   = list( term  = c("fixed", "precision", "info", "class"),
                                       score = c("MLE", "WLE", "BME", "EAP"),
@@ -46,8 +44,6 @@ catIrt <- function( params, mod = c("brm", "grm"),
   environment(startCat)  <- environment()
   environment(middleCat) <- environment()
   environment(termCat)   <- environment()
-  
-# WHY ISN'T VARIABLE TERMINATION WORKING????????
 
 
 #############################################################################
@@ -124,19 +120,27 @@ catIrt <- function( params, mod = c("brm", "grm"),
     cat("\nIff 'catMiddle$expos' equals 'SH', the last 'params' column must contain P(Admin | Select)'s.\n\n")    
 
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-# BUILDING THE RESPONSE MATRIX #
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+# BUILDING THE PARAMS/RESPONSE MATRIX #
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
 # Making sure the parameters are of a particular class:
-  if( !all( round(params[ , 1]) != 1:nrow(params) ) )
-    params <- cbind(1:nrow(params), params)  # first column is item number
+  if( inherits(params, mod.opt) ){
+    if( any( round(params[ , 1]) != 1:nrow(params) ) ){
+      params <- cbind(1:nrow(params), params)  # first column is item number
+    } # END if STATEMENT
+  } else{
+    params <- cbind(1:nrow(params), params)    # first column is item number
+  } # END ifelse STATEMENT
 
 # Building the response matrix and indicating its class:
   if( is.null(resp) ){
     resp <- simIrt(theta = theta, params = params[ , -c(1, ncol(params))], mod = mod)$resp
     
   } else{
+  	
+# And then make sure that 'resp' is a matrix:
+  	resp        <- rbind(resp)
   	class(resp) <- c(mod, "matrix")
   	
   } # END ifelse STATEMENT
@@ -287,8 +291,20 @@ catIrt <- function( params, mod = c("brm", "grm"),
     
   } # END if STATEMENT
   
+
+## e) it.range ##
+# --> If 'it.range' is specified for non-binary response models, warn
+  if( mod != "brm" & !is.null(catStart$it.range) )
+    warning("'catStart$it.range' can only be specified for 'brm'")
+
+## f) n.select ##
+
+# --> If 'n.select' is not specified, set it to 1.
+  if( length(catStart$n.select) != 1 )
+    catStart$n.select <- 1
   
-## e) delta ## (only if using KL selection mechanism)
+  
+## g) delta ## (only if using KL selection mechanism)
   if( any( catStart$select %in% c("FP-KL", "VP-KL", "FI-KL", "VI-KL") ) ){
   	
     if( length(catStart$delta) != 1 )
@@ -311,16 +327,9 @@ catIrt <- function( params, mod = c("brm", "grm"),
     } # END if STATEMENT  
     
   } # END if STATEMENT
-  
-
-## f) n.select ##
-
-# --> If 'n.select' is not specified, set it to 1.
-  if( !is.integer(catStart$n.select) )
-    catStart$n.select <- 1
 
 
-## g) score ##
+## h) score ##
   if( (length(catStart$score) != 1) | !any(catStart$score %in% sco.opt) ){ 
 
 # --> Make sure 'score' matches one of the possible scoring methods.   
@@ -336,8 +345,18 @@ catIrt <- function( params, mod = c("brm", "grm"),
     
   } # END if STATEMENT
 
+
+## i) range ## (Make sure that the MLE/EAP/BME has an integer to maximize)
+
+# --> If 'int' is not correctly specified, set it to a default.
+  if( length(catStart$range) != 2 )
+    catStart$range <- c(-6, 6)
+    
+# --> And making sure that the interval is in sorted order.
+  catStart$range <- sort(catStart$range)
   
-## h) step.size ## (only if 'score' is 'step')
+    
+## j) step.size ## (only if 'score' is 'step')
   if( { catStart$score == "step" &
   	    ( length(catStart$step.size) != 1 | !is.numeric(catStart$step.size) ) } ){
 
@@ -357,7 +376,7 @@ catIrt <- function( params, mod = c("brm", "grm"),
   } # END if STATEMENT
 	
   	  
-## i) leave.after.MLE ##
+## k) leave.after.MLE ##
 
 # --> If 'leave.after.MLE' is not specified, set it to FALSE.
   if( !is.logical(catStart$leave.after.MLE) )
@@ -398,7 +417,7 @@ catIrt <- function( params, mod = c("brm", "grm"),
 # --> Make sure 'at' matches one of the possible selection-at mechanisms.
   	} else if( interactive() ){       			
       while( !( length(catMiddle$at) == 1 & all(catMiddle$at %in% at.opt) ) )
-        catStart$at <- readline( paste("Select from ONLY ONE of the following middle locations to select items - ",
+        catMiddle$at <- readline( paste("Select from ONLY ONE of the following middle locations to select items - ",
     	                               paste(at.opt, collapse = ", "),
     	                               ": ", sep = "")
     	                       )    	                 	                    
@@ -408,8 +427,18 @@ catIrt <- function( params, mod = c("brm", "grm"),
     
   } # END if STATEMENT
   
+## c) it.range ##
+# --> If 'it.range' is specified for non-binary response models, warn
+  if( mod != "brm" & !is.null(catMiddle$it.range) )
+    warning("'catMiddle$it.range' can only be specified for 'brm'")
+    
+## d) n.select ##
+
+# --> If 'n.select' is not specified, set it to 1.
+  if( length(catMiddle$n.select) != 1)
+    catMiddle$n.select <- 1
   
-## c) delta ## (only if using KL selection mechanism)
+## e) delta ## (only if using KL selection mechanism)
   if( any( catMiddle$select %in% c("FP-KL", "VP-KL", "FI-KL", "VI-KL") ) ){
   	
     if( length(catMiddle$delta) != 1 )
@@ -434,14 +463,7 @@ catIrt <- function( params, mod = c("brm", "grm"),
   } # END if STATEMENT
 
 
-## d) n.select ##
-
-# --> If 'n.select' is not specified, set it to 1.
-  if( !is.integer(catMiddle$n.select) )
-    catMiddle$n.select <- 1
-
-
-## e) score ##
+## f) score ##
   if( (length(catMiddle$score) != 1) | !any(catMiddle$score %in% sco.opt) ){
   	
 # --> Make sure 'score' matches one of the possible scoring methods.       
@@ -457,7 +479,7 @@ catIrt <- function( params, mod = c("brm", "grm"),
   } # END if STATEMENT
 
 
-## f) range ## (Make sure that the MLE/EAP/BME has an integer to maximize)
+## g) range ## (Make sure that the MLE/EAP/BME has an integer to maximize)
 
 # --> If 'int' is not correctly specified, set it to a default.
   if( length(catMiddle$range) != 2 )
@@ -905,36 +927,37 @@ catIrt <- function( params, mod = c("brm", "grm"),
 #~~~~~~~~~~~~~~~~~~~~~~~~#
 
 # The number of people should be equal to the number of response matrix rows:   
-  n_thet <- dim(resp)[1]
+  N <- dim(resp)[1]   # N is the number of row of theta/resp
+  J <- dim(params)[1] # J is the number of rows of params
 
 # A list to store individual, person attributes (final responses, final theta, etc.)
-  cat_indiv  <- vector("list", length = n_thet)
+  cat_indiv  <- vector("list", length = N)
 
 # Vectors to store CAT thetas, categories, test info, and SEM:
-  cat_theta  <- vector("numeric",   length = n_thet)
-  cat_categ  <- vector("character", length = n_thet)
-  cat_info   <- vector("numeric",   length = n_thet)
-  cat_sem    <- vector("numeric",   length = n_thet)
-  cat_length <- vector("numeric",   length = n_thet)
-  cat_term   <- vector("character", length = n_thet)
+  cat_theta  <- vector("numeric",   length = N)
+  cat_categ  <- vector("character", length = N)
+  cat_info   <- vector("numeric",   length = N)
+  cat_sem    <- vector("numeric",   length = N)
+  cat_length <- vector("numeric",   length = N)
+  cat_term   <- vector("character", length = N)
   
 # Vectors to store TOT thetas, categories, test info, and SEM:
-  tot_theta  <- vector("numeric",   length = n_thet)
-  tot_categ  <- vector("character", length = n_thet)
-  tot_info   <- vector("numeric",   length = n_thet)
-  tot_sem    <- vector("numeric",   length = n_thet)
+  tot_theta  <- vector("numeric",   length = N)
+  tot_categ  <- vector("character", length = N)
+  tot_info   <- vector("numeric",   length = N)
+  tot_sem    <- vector("numeric",   length = N)
   
 # Vectors to store TRUE thetas, categories:
   if( missing(theta) ){
     theta      <- NULL
-    true_theta <- rep(NA, length = n_thet)
+    true_theta <- rep(NA, length = N)
   } else if( is.null(theta) ){
-    true_theta <- rep(NA, length = n_thet)
+    true_theta <- rep(NA, length = N)
   } else{
     true_theta <- theta
   } # END ifelse STATEMENT
   
-  true_categ <- vector("character", length = n_thet)
+  true_categ <- vector("character", length = N)
   
   
 # To store the selection rates (for Sympson-Hetter):
@@ -950,12 +973,14 @@ catIrt <- function( params, mod = c("brm", "grm"),
 #~~~~~~~~~~~~~~~~~~~~~~#
 
 # For calibrations, we will want to suppress the upper progress bar.
-  if( progress )
-    cat("CAT Progress:-------------------------------------|\n")
+  if( progress ){
+  	cat("CAT Progress:\n")
+    pb <- txtProgressBar(min = 0, max = N, initial = 0, char = "*", style = 3)
+  }  # END if STATEMENT
     
 
 # We will repeat the CAT for each person:
-  for( i in 1:n_thet ){
+  for( i in 1:N ){
     
 #####
 # 1 # (INITIALIZING THE CAT)
@@ -980,13 +1005,12 @@ catIrt <- function( params, mod = c("brm", "grm"),
 
 # Responses, proximate theta ests/info/sem, item numbers/parameters of CAT:
     cat_resp.i  <- rep(NA, times = catTerm.i$n.max)
+    cat_par.i   <- matrix(NA, nrow = catTerm.i$n.max, ncol = ncol(params))
+    cat_it.i    <- cat_resp.i
   
     cat_theta.i <- c(catStart.i$init.theta, cat_resp.i)
     cat_info.i  <- cat_resp.i
     cat_sem.i   <- cat_resp.i
-  
-    cat_it.i    <- cat_resp.i
-    cat_par.i   <- matrix(data = NA, nrow = catTerm.i$n.max, ncol = ncol(params))
     
 # Setting the classes, so the other functions will work.
     class(cat_resp.i) <- class(cat_par.i) <- class(resp)
@@ -995,15 +1019,13 @@ catIrt <- function( params, mod = c("brm", "grm"),
     it_flags    <- rep(0, nrow(params))
   
 # Running the loop at the beginning of the CAT for each person:
-    x <- startCat( params = params,
-                   resp = resp.i,
-                   mod = mod,
+    x <- startCat( params = params, resp = resp.i, mod = mod,
                    it_flags = it_flags,
                    catStart = catStart.i, catMiddle = catMiddle.i, catTerm = catTerm.i,
                    ddist = ddist, ... )
                  
 # Updated to where we are in the CAT:
-    j <- sum( !is.na(cat_resp.i) )
+    j <- x$j
     S <- c(S, x$S)
   
 #####
@@ -1019,7 +1041,8 @@ catIrt <- function( params, mod = c("brm", "grm"),
 # --> b) Call the estimation function on stuff to this point,
       x  <- get(scoreFun)( resp = cat_resp.i[1:j],
                            params = cat_par.i[1:j, -c(1, ncol(params)), drop = FALSE],
-                           range = catMiddle.i$range, mod = mod, ddist = ddist, ... )
+                           range = catMiddle.i$range, mod = mod,
+                           ddist = ddist, ... )
                            
       cat_theta.i[j + 1] <- x$theta
       cat_info.i[j]      <- x$info
@@ -1055,6 +1078,7 @@ catIrt <- function( params, mod = c("brm", "grm"),
                       mod       = mod,
                       it_flags  = it_flags,
                       cat_par   = cat_par.i[1:j, , drop = FALSE],
+                      cat_it    = cat_it.i[1:j],
                       cat_resp  = cat_resp.i[1:j],
                       cat_theta = cat_theta.i[j + 1],
                       cat_info  = cat_info.i,
@@ -1063,7 +1087,7 @@ catIrt <- function( params, mod = c("brm", "grm"),
                       ddist = ddist, ... )
 
 # Updated to where we are in the CAT:
-      j <- sum( !is.na(cat_resp.i) )
+      j <- x$j
       S <- c(S, x$S)
       
       y <- termCat( params   = params[ , -c(1, ncol(params))],
@@ -1159,17 +1183,9 @@ catIrt <- function( params, mod = c("brm", "grm"),
 
 # And indicate the progress thus far into the cat:
     if( progress )
-      cat( rep( "*", round( ( i / n_thet ) * 50 ) - round( ( ( i - 1 ) / n_thet ) * 50 ) ), sep = "" )
+      setTxtProgressBar(pb, value = i)
 
   } # END for i LOOP
-
-#~~~~~~~~~~~~~~~~~~~~~~#
-# Progress Statement 3 #
-#~~~~~~~~~~~~~~~~~~~~~~#
-
-# We need to end the progress bar on the next line:
-  if( progress )
-    cat("\n")
 
 
 # And if we had to change EAP to BME, let people know:

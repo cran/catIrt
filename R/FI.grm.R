@@ -10,17 +10,15 @@ function( params,                            # parameters over which to calculat
     resp <- NULL
   
 # Then turn params into a matrix:
-  if( is.null( dim(params) ) )                             # if it's a vector ... -->
-    params <- t(params)                                    # ... --> turn it into a matrix
-    
+  params <- rbind(params)
+      
 # And turn response into a matrix:
-  if( !is.null(resp) )                                          # if it exists ... -->
-    resp <- { if( length(theta) == 1 ) matrix( resp, ncol = 1 )  # ... --> turn it into a 1-column matrix,
-              else                     t(resp) }                 # ... --> or a multi-column matrix
+  resp <- { if( dim(params)[1] > 1 ) rbind(resp)   # ... --> turn it into a multi-column matrix,
+            else                     cbind(resp) } # ... --> or a 1-column matrix
 
 # Then find the number of items and people:
-  n.ppl <- length(theta)
-  n.it <- dim(params)[1]
+  N <- length(theta)
+  J <- dim(params)[1]
   
 # And find the number of responses:
   n.resp <- ifelse(test = !is.null(resp), yes = dim(resp)[1], no = 0)
@@ -44,7 +42,7 @@ function( params,                            # parameters over which to calculat
     stop( "resp needs to be numeric" )
 
 ## 3 ## (Make sure that the dimensions of params and response are equal)
-  if( !is.null(resp) & ( n.resp != n.it ) )
+  if( !is.null(resp) & ( n.resp != N ) )
     stop( "number of params does not match the length of resp" )
   
 
@@ -63,7 +61,7 @@ function( params,                            # parameters over which to calculat
     a <- params[ , 1, drop = FALSE]; b <- params[ , -1, drop = FALSE]
      
 # If there is only ONE theta:
-    if( length(theta) == 1 ){
+    if( N == 1 ){
       
       info <- 0
       
@@ -99,11 +97,7 @@ function( params,                            # parameters over which to calculat
       
       } # END for LOOP
       
-    } # END if STATEMENT
-    
-    
-# If there are many thetas
-    else{
+    } else{
       
       info <- 0
       
@@ -140,7 +134,7 @@ function( params,                            # parameters over which to calculat
         
       } # END for LOOP
       
-    } # END else STATEMENT
+    } # END ifelse STATEMENT
     
   } # END if STATEMENT
   
@@ -151,30 +145,35 @@ function( params,                            # parameters over which to calculat
 
   if( type == "observed" ){
     
-    if( length(theta) == 1 ){
-      info <- -lder2.grm(xu = cbind(params, resp), theta = theta)
-    } # END if STATEMENT
+    if( N == 1 ){
+    	
+      info <- -lder2.grm(xu = cbind(params, c(resp)), theta = theta)
     
-    else{
+    } else{
       
       info <- NULL
       for( i in seq_along(theta) )
-        info <- rbind(info, -lder2.grm(xu = cbind(params, resp[ , i]), theta = theta[i]) )
+        info <- rbind(info, -lder2.grm(xu = cbind(params, c(resp[i , ])), theta = theta[i]) )
         
-    } # END else STATEMENT
+    } # END ifelse STATEMENT
     
   } # END if STATEMENT
 
 # If theta is a scalar, item information is a vector and test information is a scalar
 # If theta is a vector, item information is a matrix and test information is a vector
 
-  i.info <- { if( length(theta) == 1 ) info
-                else                   t(info) }
-                
-  t.info <- { if( length(theta) == 1 ) sum(info)
-              else                     apply(i.info, MARGIN = 2, FUN = sum) }
-              
+  if( N == 1 ){
+  
+    i.info <- info
+    t.info <- sum(info)
     
+  } else{
+  	
+    i.info <- t(info)
+    t.info <- colSums(i.info)
+    
+  } # END ifelse STATEMENT
+     
   sem <- ifelse( test = signif(t.info) > 0, yes = sqrt( 1 / t.info ), no = NA )
                 
                 

@@ -4,30 +4,25 @@ itChoose <- function( left_par, mod = c("brm", "grm"),
                       select = c("UW-FI", "LW-FI", "PW-FI",
                                  "FP-KL", "VP-KL", "FI-KL", "VI-KL",
                                  "random"),
-                      at = c("theta", "bounds"), delta  = NULL, bounds = NULL,
-                      range = c(-6, 6), ddist  = dnorm, quad = 33, ... ){                  	
+                      at = c("theta", "bounds"),
+                      range = c(-6, 6), it.range = NULL,
+                      delta  = NULL, bounds = NULL,
+                      ddist  = dnorm, quad = 33, ... ){                  	
 
 # Note: "at" will be either "theta" or "bounds" depending if the user wants
 #        to pick maximum information at "theta" or at one of the classification
 #        bounds.
-
-# Note 2: Maybe add in content later? How??
-
-# Note 3: left_par and cat_par need to have and item column.  What to do?
-
-# First, if cat_par and cat_resp don't exist, set them to something.
+# Note 2: left_par and cat_par need to have and item column.  What to do?
+    
+# If cat_par and cat_resp don't exist, set them to something.
   if( is.null(cat_par) )
     cat_par  <- c(NA, NA, NA)
   if( is.null(cat_resp) )
     cat_resp <- c(NA, NA, NA)
 
-# Second, --> turn left_par into a matrix:
-  if( is.null( dim(left_par) ) )   # if it's a vector ... -->
-    left_par <- t(left_par)        # ... --> turn it into a matrix
-    
-#        --> turn cat_par into a matrix:
-  if( is.null( dim(cat_par) ) )    # if it's a vector and exists ... -->
-    cat_par <- t(cat_par)          # ... --> turn it into a matrix
+# Then turn left_par/cat_par into a matrix:
+  left_par <- rbind(left_par)
+  cat_par  <- rbind(cat_par)
  
 
 #~~~~~~~~~~~~~~~~~#
@@ -62,9 +57,24 @@ itChoose <- function( left_par, mod = c("brm", "grm"),
 #~~~~~~~~~~~~~~~~~#
 # Selecting Items #
 #~~~~~~~~~~~~~~~~~#
-    
+
 #####
-# 1 # (WHERE TO SELECT)
+# 1 # (RESTRICTING PARAMETERS)
+#####
+
+# If we're using the "brm", b.limits is legit, and we have items within the limits:
+#   --> Set left_par to the items within the limits!
+  if( mod == "brm" & ( length(it.range) == 2 ) ){
+  	
+    good_par <- ( left_par[ , 3] >= min(it.range) ) & ( left_par[ , 3] <= max(it.range) )
+  
+    if( sum(good_par) > 0 )
+      left_par <- left_par[good_par, , drop = FALSE]
+    
+  } # END if STATEMENT
+  
+#####
+# 2 # (WHERE TO SELECT)
 #####
 
   class(left_par) <- class(cat_par) <- c(mod, "matrix")
@@ -77,14 +87,14 @@ itChoose <- function( left_par, mod = c("brm", "grm"),
   } else if( at == "bounds" ){
   	
 # Figuring out the closest bound to current theta, and sampling lest there are 2:
-    theta  <- sample(bounds[ which.min( abs( cat_theta - bounds ) ) ], size = 1 )
+    theta  <- bounds[ which.min( abs( cat_theta - bounds ) ) ]
   
-  } # END if STATEMENTS
+  }
   
 # Note: We might want more sophsticated methods of choosing proximate theta?
 
 #####
-# 2 # (FIGURING OUT INFO)
+# 3 # (FIGURING OUT INFO)
 #####
 
 ## FOR FISHER INFORMATIONS ##
@@ -124,28 +134,28 @@ itChoose <- function( left_par, mod = c("brm", "grm"),
   if( select == "FP-KL" ){
       
     info <-  KL(params = left_par[ , -1],
-                theta = theta,
-                delta = delta / 1)$item
+                theta  = theta,
+                delta  = delta / 1)$item
     
   } else if( select == "VP-KL" ){
   	
   	info <-  KL(params = left_par[ , -1],
-  	            theta = theta,
-  	            delta = delta / sqrt( max(nrow(cat_par), 1) ) )$item
+  	            theta  = theta,
+  	            delta  = delta / sqrt( max(nrow(cat_par), 1) ) )$item
   	
   }	else if( select == "FI-KL" ){
   
     info <- IKL(params = left_par[ , -1],
-                theta = theta,
-                delta = delta / 1,
-                quad = quad)$item
+                theta  = theta,
+                delta  = delta / 1,
+                quad   = quad)$item
   
   } else if( select == "VI-KL" ){
   	
     info <- IKL(params = left_par[ , -1], 
-                theta = theta,
-                delta = delta / sqrt( max(nrow(cat_par), 1) ),
-                quad = quad)$item
+                theta  = theta,
+                delta  = delta / sqrt( max(nrow(cat_par), 1) ),
+                quad   = quad)$item
     
   } # END ifelse STATEMENTS
   
@@ -161,7 +171,7 @@ itChoose <- function( left_par, mod = c("brm", "grm"),
   } # END random if STATEMENT
 
 #####
-# 3 # (SORTING ITEMS)
+# 4 # (SORTING ITEMS)
 #####
 
 # Making sure that we have items to choose between:
@@ -176,7 +186,7 @@ itChoose <- function( left_par, mod = c("brm", "grm"),
   info_select <- sort(info, decreasing = TRUE)[1:max(numb, n_select)[1]]
   
 #####
-# 4 # (CHOOSING ITEMS)
+# 5 # (CHOOSING ITEMS)
 #####
 
 # If we are only selecting one item, randomly select that item.
@@ -187,10 +197,10 @@ itChoose <- function( left_par, mod = c("brm", "grm"),
     par_next  <- par_select[par_select[ , 1] == it_next, , drop = FALSE]
     info_next <- info_select[par_select[ , 1] == it_next]
     
-  } else if( (numb > 1) & (numb <= n_select) ){
+  } else if( (numb > 1) & (numb < n_select) ){
   
 # If we are selecting more than one item, randomly select those items:
-    it_next   <- sample( c(par_select[ , 1] ), size = numb)
+    it_next   <- sample( c(par_select[ , 1]), size = numb)
     par_next  <- par_select[par_select[ , 1] %in% it_next, , drop = FALSE]
     info_next <- info_select[par_select[ , 1] %in% it_next]
     

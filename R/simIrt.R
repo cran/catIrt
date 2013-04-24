@@ -40,9 +40,16 @@ function( theta = seq(-3, 3, by = .1), # a scalar/vector of theta values
   } # END if STATEMENTS
   
 
-#~~~~~~~~~~~~~~~~~~~~#
-# Sorting Parameters #
-#~~~~~~~~~~~~~~~~~~~~#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+# Sorting/Naming Parameters #
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
+# If we are using the binary response model, the params need to be named:
+  if( mod == "brm" ){
+  
+    colnames(params) <- c("a", "b", "c")
+    
+  } # END if STATEMENT
 
 # If we are using the graded response model, the boundaries need to be ordered:
   if( mod == "grm" & inherits(params[ , -1], "matrix") ){
@@ -83,10 +90,10 @@ function( theta = seq(-3, 3, by = .1), # a scalar/vector of theta values
          length(theta), " simulees, ", nrow(params), " items\n\n")
   } else if(mod == "grm" & length(theta) == 1){
     cat("\nGraded response model simulation:\n   ",
-         length(theta), " simulee, ",  nrow(params), " items, ", ncol(params), " levels per item\n\n")
+         length(theta), " simulee, ",  nrow(params), " items, ", ncol(params) - 1, " levels per item\n\n")
   } else if(mod == "grm"){
     cat("\nGraded response model simulation:\n   ",
-         length(theta), " simulees, ", nrow(params), " items, ", ncol(params), " levels per item\n\n")
+         length(theta), " simulees, ", nrow(params), " items, ", ncol(params) - 1, " levels per item\n\n")
   } # END ifelse STATEMENTS
                      
   return(ret)

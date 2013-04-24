@@ -59,17 +59,23 @@ function(u, x, theta,
       pder2.large <- pder2.grm(x = cbind(a, b[ , k - 1] ), theta = theta)
       pder2.small <- pder2.grm(x = cbind(a, b[ , k] ), theta = theta)
     }
-  
-    H     <- H + ( ( pder1.large - pder1.small ) * ( pder2.large - pder2.small ) ) / ( p.large - p.small )
+    
     lder1 <- lder1 + ( y * ( pder1.large - pder1.small ) ) / ( p.large - p.small )
+  
+    if( type == "WLE" )
+      H   <- H + ( ( pder1.large - pder1.small ) * ( pder2.large - pder2.small ) ) / ( p.large - p.small )
   
   } # END for k LOOP
   
-  if( type == "MLE" )
+  if( type == "MLE" ){
+  	
     return( sum(lder1) )
     
-  if( type == "WLE" )
+  } else if( type == "WLE" ){
+  
     return( sum(lder1) + sum(H) / (2 * I) )
+    
+  } # END ifelse STATEMENT
   
 } # END lder1.grm FUNCTION
 

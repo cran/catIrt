@@ -4,15 +4,13 @@ function(resp,                         # The vector of responses
          range = c(-6, 6),             # The integer to maximize over
          mod = c("brm", "grm"),        # The model
          ...){
-
+  
 # First turn params into a matrix:
-  if( is.null( dim(params) ) )                       # if it's a vector ... -->
-    params <- t(params)                              # ... --> turn it into a matrix
+  params <- rbind(params)
     
 # And turn response into a matrix:
-  if( !is.null(resp) & is.null( dim(resp) ) )                    # if it's a vector ... -->
-    resp <- { if( dim(params)[1] > 1 ) matrix( resp, nrow = 1 )  # ... --> turn it into a multi-column matrix,
-              else                     matrix( resp, ncol = 1) } # ... --> or a 1-column matrix
+  resp <- { if( dim(params)[1] > 1 ) rbind(resp)   # ... --> turn it into a multi-column matrix,
+            else                     cbind(resp) } # ... --> or a 1-column matrix
   
 #~~~~~~~~~~~~~~~~~#
 # Argument Checks #
@@ -62,9 +60,9 @@ function(resp,                         # The vector of responses
                                            theta = est,
                                            type = "observed",
                                            resp = resp)$test
-  sem <- sqrt( (info + d^2)/info^2 ) # see Warm (p. 449)
-  
-# NOTE: NEED TO ADD THE ACTUAL INFORMATION/SEM CORRESPONDING TO WLE?
+
+# Actual information corresponding to WLE:
+  sem <- sqrt( (info + d^2)/info^2 )
   
   list(theta = est, info = info, sem = sem)
   

@@ -8,13 +8,11 @@ function(resp,                             # The vector of responses
   require(sfsmisc)
   
 # First turn params into a matrix:
-  if( is.null( dim(params) ) )                       # if it's a vector ... -->
-    params <- t(params)                              # ... --> turn it into a matrix
+  params <- rbind(params)
 
 # And turn response into a matrix:
-  if( !is.null(resp) & is.null( dim(resp) ) )                    # if it's a vector ... -->
-    resp <- { if( dim(params)[1] > 1 ) matrix( resp, nrow = 1 )  # ... --> turn it into a multi-column matrix,
-              else                     matrix( resp, ncol = 1) } # ... --> or a 1-column matrix
+  resp <- { if( dim(params)[1] > 1 ) rbind(resp)   # ... --> turn it into a multi-column matrix,
+            else                     cbind(resp) } # ... --> or a 1-column matrix
 
   class(params) <- c(mod, "matrix")
 
@@ -90,8 +88,6 @@ function(resp,                             # The vector of responses
                                            theta = est,
                                            type = "observed",
                                            resp = resp)$test
-  
-# NOTE: NEED TO ADD THE ACTUAL INFORMATION/SEM CORRESPONDING TO EAP?
   
   list(theta = est, info = info, sem = sem)
   

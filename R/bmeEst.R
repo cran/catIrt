@@ -6,14 +6,11 @@ function(resp,                         # The vector of responses
          ddist = dnorm, ... ){         # The prior distribution stuff:
 
 # First turn params into a matrix:
-  if( is.null( dim(params) ) )                       # if it's a vector ... -->
-    params <- t(params)                              # ... --> turn it into a matrix
+  params <- rbind(params)
     
 # And turn response into a matrix:
-# And turn response into a matrix:
-  if( !is.null(resp) & is.null( dim(resp) ) )                    # if it's a vector ... -->
-    resp <- { if( dim(params)[1] > 1 ) matrix( resp, nrow = 1 )  # ... --> turn it into a multi-column matrix,
-              else                     matrix( resp, ncol = 1) } # ... --> or a 1-column matrix
+  resp <- { if( dim(params)[1] > 1 ) rbind(resp)   # ... --> turn it into a multi-column matrix,
+            else                     cbind(resp) } # ... --> or a 1-column matrix
 
 #~~~~~~~~~~~~~~~~~#
 # Argument Checks #
@@ -52,10 +49,9 @@ function(resp,                         # The vector of responses
     est[i] <- optimize( get(likFun), lower = l, upper = u, maximum = TRUE,
                         x = params, u = resp[i, ], type = "BME",
                         ddist = ddist, ... )$max                    
-    hes[i] <- hessian(func = function(x, ... ) log( ddist(x, ... ) ), x = est[i], method = "Richardson", ... )
+    hes[i] <- hessian( func = function(x, ... ) log( ddist(x, ... ) ),
+                       x = est[i], method = "Richardson", ... )
   }
-
-# Note --> it's finding local maxima --> how do I get away from that?
 
 # Round the estimated value to three/four? decimal places:          
   est <- round(est, digits = 4)

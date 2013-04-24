@@ -1,7 +1,7 @@
 Package: catIrt
 Type: Package
-Version: 0.3-0
-Date: 2012-09-12
+Version: 0.4-0
+Date: 2013-04-24
 Title: An R Package for Simulating IRT-Based Computerized Adaptive
         Tests
 Author: Steven W. Nydick
@@ -16,6 +16,7 @@ Description: Functions designed to simulate data that conform to basic
         methods, ability estimation methods, and termination criteria.
 License: GPL (>= 2)
 LazyLoad: yes
-Packaged: 2012-09-14 21:14:40 UTC; stevennydick
+Packaged: 2013-04-25 14:05:22 UTC; stevennydick
+NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2012-09-15 05:11:28
+Date/Publication: 2013-04-25 22:44:59

@@ -18,16 +18,20 @@ catIrt( params, mod = c("brm", "grm"),
                          select = c("UW-FI", "LW-FI", "PW-FI",
                                     "FP-KL", "VP-KL", "FI-KL", "VI-KL",
                                     "random"),
-                         at = c("theta", "bounds"), delta = .1,
-                         n.select = 1,
+                         at = c("theta", "bounds"),
+                         it.range = NULL, n.select = 1,
+                         delta = .1,
                          score = c("fixed", "step", "random", "WLE", "BME", "EAP"),
+                         range = c(-1, 1),
                          step.size = 3, leave.after.MLE = FALSE ),
         catMiddle = list( select = c("UW-FI", "LW-FI", "PW-FI",
                                      "FP-KL", "VP-KL", "FI-KL", "VI-KL",
                                      "random"),
-                          at = c("theta", "bounds"), delta = .1,
-                          n.select = 1,
-                          score = c("MLE", "WLE", "BME", "EAP"), range = c(-6, 6),
+                          at = c("theta", "bounds"),
+                          it.range = NULL, n.select = 1,
+                          delta = .1,
+                          score = c("MLE", "WLE", "BME", "EAP"),
+                          range = c(-6, 6),
                           expos = c("none", "SH") ),
         catTerm = list( term = c("fixed", "precision", "info", "class"),
                         score = c("MLE", "WLE", "BME", "EAP"),
@@ -117,12 +121,16 @@ catIrt( params, mod = c("brm", "grm"),
     \item \code{at}: a character string indicating where to select items.  If \command{select}
            is \option{"UW-FI"} and \command{at} is \option{"theta"}, then items will be selected
            to maximize Fisher information at the proximate \eqn{\theta} estimates.
-	\item \code{delta}: a scalar indicating the multiplier used in initial item selection if
-	       a Kullback-Leibler method is chosen.
+    \item \code{it.range}: Either a 2-element numeric vector indicating the minimum and maximum
+           allowed difficulty parameters for items selected during the starting portion of the CAT
+           (only if \command{mod} is equal to \option{"brm"}) or NULL indicating no item parameter
+           restrictions.  See \code{\link{itChoose}} for more information.
     \item \code{n.select}: an \emph{integer} indicating the number of items to select at one time.
            For instance, if \command{select} is \option{"UW-FI"}, \command{at} is \option{"theta"}, and
            \command{n.select} is 5, the item choosing function will randomly select between the top
            \emph{5} items that maximize expected Fisher information at proximate \eqn{\theta} estimates.
+    \item \code{delta}: a scalar indicating the multiplier used in initial item selection if
+		   a Kullback-Leibler method is chosen.
     \item \code{score}: a character string indicating the \eqn{\theta} estimation method.  As
            of now, the options for scoring the first few items are \option{"fixed"} (at 
            \command{init.thet}), \option{"step"} (by adding or subtracting \command{step.size} \eqn{\theta}
@@ -130,6 +138,8 @@ catIrt( params, mod = c("brm", "grm"),
            Estimation (\option{"BME"}), and Expected A-Posteriori Estimation (\option{"EAP"}).  The latter
            two allow user specified prior distributions through density (\code{d...}) functions.  See
            \code{\link{mleEst}} for more information.
+    \item \code{range}: a 2-element numeric vector indicating the minimum and maximum that
+		   \eqn{\theta} should be estimated in the starting portion of the CAT.
 	\item \code{step.size}: a scalar indicating how much to increment or decrement the
            estimate of \eqn{\theta} if \command{score} is set to \option{"step"}.
     \item \code{leave.after.MLE}: a logical indicating whether to skip the remainder of the starting
@@ -147,9 +157,13 @@ catIrt( params, mod = c("brm", "grm"),
 		   of the options.
 	\item \code{at}: a character string indicating where to select items.  See \command{select} in
 	       \command{catStart} for an explanation of the options.
+    \item \code{it.range}: Either a 2-element numeric vector indicating the minimum and maximum
+           allowed difficulty parameters for items selected during the middle portion of the CAT
+           (only if \command{mod} is equal to \option{"brm"}) or NULL indicating no item parameter
+           restrictions.  See \code{\link{itChoose}} for more information.
+	\item \code{n.select}: an \emph{integer} indicating the number of items to select at one time.
     \item \code{delta}: a scalar indicating the multiplier used in middle item selection if
            a Kullback-Leibler method is chosen.
-	\item \code{n.select}: an \emph{integer} indicating the number of items to select at one time.
 	\item \code{score}: a character string indicating the \eqn{\theta} estimation method.  As
            of now, the options for scoring the remaining items are Maximum Likelihood Estimation 
            (\option{"MLE"}), Weighted Likelihood Estimation (\option{"WLE"}), Bayesian Modal Estimation
@@ -157,7 +171,7 @@ catIrt( params, mod = c("brm", "grm"),
            user specified prior distributions through density (\code{d...}) functions.  See
            \code{\link{mleEst}} for more information.
     \item \code{range}: a 2-element numeric vector indicating the minimum and maximum that
-		   \eqn{\theta} should be estimated in the course of the CAT.
+		   \eqn{\theta} should be estimated in the middle portion of the CAT.
 	\item \code{expos}: a character string indicating whether no item exposure controls should be
 	       implemented (\option{"none"}) or whether the CAT should use Sympson-Hetter exposure
 	       controls (\option{"SH"}).  If (and only if) \command{expos} is equal to \option{"SH"},
@@ -320,7 +334,7 @@ a CAT represents a simple set of stages surrounded by a \command{while} loop
         Confidence Interval Method (see Kingsbury & Weiss, 1983).  Essentially, the SPRT compares the ratio
         of two likelihoods (e.g. the likelihood of the data given being in one category vs the likelihood
         of the data given being in the other category, as defined by \eqn{B + \delta} and
-        \eqn{B - \delta}(where \eqn{B} separates the categories and \eqn{\delta} is the halfwidth of the
+        \eqn{B - \delta} (where \eqn{B} separates the categories and \eqn{\delta} is the halfwidth of the
         indifference region) and compares that ratio with a ratio of error rates (\eqn{\alpha} and
         \eqn{\beta}) (see Wald, 1945).  The GLR uses the maximum likelihood estimate in place of either
         \eqn{B + \delta} or \eqn{B - \delta}, and the confidence interval method terminates a CAT if the
@@ -401,7 +415,7 @@ Weiss, D. J., & Kingsbury, G. G. (1984). Application of computerized adaptive te
 }
 
 \author{
-Steven W. Nydick
+Steven W. Nydick <nydic001@umn.edu>
 }
 
 \seealso{
@@ -428,11 +442,13 @@ b.resp <- simIrt(theta = theta, params = b.params, mod = "brm")$resp
 # the typical, classic post-hoc CAT:
 catStart1 <- list(init.theta = 0, n.start = 5,
                   select = "UW-FI", at = "theta",
-                  n.select = 4, score = "step",
-                  step.size = 3, leave.after.MLE = TRUE)
+                  n.select = 4, it.range = c(-1, 1),
+                  score = "step", range = c(-1, 1),
+                  step.size = 3, leave.after.MLE = FALSE)
 catMiddle1 <- list(select = "UW-FI", at = "theta",
-                   n.select = 1, score = "MLE",
-                   range = c(-6, 6), expos = "none")
+                   n.select = 1, it.range = NULL,
+                   score = "MLE", range = c(-6, 6),
+                   expos = "none")
 catTerm1 <- list(term = "fixed", n.min = 10, n.max = 50)
 
 cat1 <- catIrt(params = b.params, mod = "brm",
@@ -459,12 +475,14 @@ par(mfrow = c(2, 1))
 plot(cat1, which = "none", ids = c(1, 30), ask = FALSE)
 par(mfrow = c(1, 1))
 
+
 ## CAT 2 ##
 # using Fixed Point KL info rather than Unweighted FI to select items:
 catStart2 <- catStart1
 catMiddle2 <- catMiddle1
 catTerm2 <- catTerm1
 
+catStart2$leave.after.MLE <- TRUE         # leave after mixed response pattern
 catMiddle2$select <- "FP-KL"
 catMiddle2$at <- "bounds"
 catMiddle2$delta <- .2
@@ -474,7 +492,9 @@ cat2 <- catIrt(params = b.params, mod = "brm",
                catStart = catStart2,
                catMiddle = catMiddle2,
                catTerm = catTerm2)
-cor(cat1$cat_theta, cat2$cat_theta)    # very close!
+cor(cat1$cat_theta, cat2$cat_theta)       # very close!
+
+summary(cat2, group = FALSE, ids = 1:4)   # rarely 5 starting items!
 
 
 ## CAT 3/4 ##
@@ -579,6 +599,8 @@ cat10 <- catIrt(params = g.params, mod = "grm",
                 catStart = catStart1,
                 catMiddle = catMiddle1,
                 catTerm = catTerm1)
+
+# warning because it.range cannot be specified for graded response models!
 
 # if there is more than 200 simulees, it doesn't print individual thetas:
 cat10

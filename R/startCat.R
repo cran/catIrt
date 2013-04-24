@@ -7,11 +7,21 @@ function( params, resp, mod,
                                       "random"),
                            at = c("theta", "bounds"), delta = .1,
                            n.select = 5,
-                           score = c("fixed", "step", "random", "WLE", "BME", "EAP"),
+                           score = c("fixed", "step", "random",
+                                     "WLE", "BME", "EAP"),
+                           range = c(-6, 6),
                            step.size = 3, leave.after.MLE = FALSE ),
           catMiddle,
           catTerm,
           ddist = dnorm, ... ){
+
+# Make sure that R CMD check doesn't NOTE for binding sake.
+  cat_par.i   <- NULL; rm(cat_par.i)
+  cat_it.i    <- NULL; rm(cat_it.i)
+  cat_resp.i  <- NULL; rm(cat_resp.i)
+  cat_theta.i <- NULL; rm(cat_theta.i)
+  cat_info.i  <- NULL; rm(cat_info.i)
+  cat_sem.i   <- NULL; rm(cat_sem.i)
 
 # A vector to store selection rates (if needed):
   S        <- NULL
@@ -34,7 +44,8 @@ function( params, resp, mod,
                              cat_theta = cat_theta.i[j],
                              select = catStart$select, at = catStart$at,
                              bounds = catTerm$c.term$bounds, delta = catStart$delta,
-                             range  = catMiddle$range, ddist = ddist, ... )$params[ , 1]
+                             range  = catStart$range, it.range = catStart$it.range,
+                             ddist = ddist, ... )$params[ , 1]
                              
                              
 # Pick the particular item (using a trick in case we only have one left):
@@ -92,9 +103,10 @@ function( params, resp, mod,
       scoreFun <- paste(tolower(catMiddle$score), "Est", sep = "")
            
 # --> b) Call the estimation function on stuff to this point,
-      x <- get(scoreFun)(resp = cat_resp.i[1:j],
-                         params = cat_par.i[1:j, -c(1, ncol(cat_par.i))],
-                         range = catMiddle$range, mod = mod, ddist = ddist, ...)
+      x <- get(scoreFun)( resp = cat_resp.i[1:j],
+                          params = cat_par.i[1:j, -c(1, ncol(cat_par.i))],
+                          range = catMiddle$range,
+                          mod = mod, ddist = ddist, ... )
                         
 # --> c) Pull out important information.
       cat_theta.i[j + 1] <<- x$theta
@@ -102,8 +114,7 @@ function( params, resp, mod,
       cat_sem.i[j]       <<- x$sem
       
 # --> BREAK THE FUNCTION AND RETURN STUFF 
-      ret <- list(S = S)
-      return(ret)
+      return( list(j = j, S = S) )
     
     } else if(catStart$score == "WLE" | catStart$score == "BME" | catStart$score == "EAP"){
       
@@ -113,9 +124,10 @@ function( params, resp, mod,
 
       
 # --> b) Call the estimation function on stuff to this point,
-      x <- get(scoreFun)(resp = cat_resp.i[1:j],
-                         params = cat_par.i[1:j, -c(1, ncol(cat_par.i))],
-                         range = catMiddle$range, mod = mod, ddist = ddist, ...)
+      x <- get(scoreFun)( resp = cat_resp.i[1:j],
+                          params = cat_par.i[1:j, -c(1, ncol(cat_par.i))],
+                          range = catStart$range, mod = mod,
+                          ddist = ddist, ... )
                          
                         
 # --> c) Pull out important information.
@@ -130,15 +142,15 @@ function( params, resp, mod,
 # ----> If random, then randomly generate theta between int[1] and int[2], 
       cat_theta.i[j + 1] <<- switch(catStart$score,
                                     random = runif(n = 1,
-                                                   min = min(catMiddle$range)[1],
-                                                   max = max(catMiddle$range)[1]),
+                                                   min = min(catStart$range)[1],
+                                                   max = max(catStart$range)[1]),
 
 # ----> If step, then subtract or add based on last response,                                             
                                     step   = { function(){
                                    	             if( cat_resp.i[j] == min(get("resp", envir = environment(startCat))) ){
-        	                                       max(cat_theta.i[j] - catStart$step.size, min(catMiddle$range)[1])
+        	                                           max(cat_theta.i[j] - catStart$step.size, min(catStart$range)[1])
                                                  } else if( cat_resp.i[j] == max(get("resp", envir = environment(startCat))) ){
-                                                   min(cat_theta.i[j] + catStart$step.size, max(catMiddle$range)[1])
+                                                   min(cat_theta.i[j] + catStart$step.size, max(catStart$range)[1])
                                                  } else{
                                                    cat_theta.i[j]
                                                  } # END if STATEMENTS
@@ -153,7 +165,6 @@ function( params, resp, mod,
     	
 # After we have given all of the required items:
 # --> BREAK THE FUNCTION AND RETURN STUFF  
-  ret <- list(S = S)
-  return(ret)
+  return( list(j = j, S = S) )
   
 } # END startCat FUNCTION

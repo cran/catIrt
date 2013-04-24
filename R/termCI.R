@@ -31,7 +31,7 @@ function( cat_par, cat_resp,
 # First, calculate estimated theta (cat_thet)
 
 # Second, calculate SEM based on items taken:
-  std_err <- cat_sem
+  std_err <- cat_sem[j]
   
   if( is.na(std_err) )
     std_err <- Inf

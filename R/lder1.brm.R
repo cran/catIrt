@@ -9,21 +9,25 @@ function(u, x, theta,
   
 # Calculating the probability of response:
   p <- p.brm(x, theta)
-  q <- q.brm(x, theta)
+  q <- 1 - p
   
 # Calculating the first and second derivatives:
   pder1 <- pder1.brm(x, theta)
   pder2 <- pder2.brm(x, theta)
-
-# Calculating Warm correction:
-  I <- sum( pder1^2 / (p * q) )
-  H <- sum( (pder1 * pder2)  / (p * q) )
   
-  if( type == "MLE" )
+  if( type == "MLE" ){
+  	
     return( sum( (u - p) * pder1 / (p * q) ) )
     
-  if( type == "WLE" )
+  } else if( type == "WLE" ){
+  	
+# Calculating Warm correction:
+    I <- sum( pder1^2 / (p * q) )
+    H <- sum( (pder1 * pder2)  / (p * q) )
+    
     return( sum( (u - p) * pder1 / (p * q) ) + H / (2 * I) )
+    
+  }
   
 } # END lder1.brm FUNCTION
 

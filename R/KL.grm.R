@@ -5,8 +5,10 @@ function( params,       # parameters over which to calculate
 {
   
 # Turn params into a matrix:
-  if( is.null( dim(params) ) )           # if it's a vector ... -->
-    params <- t(params)                  # ... --> turn it into a matrix
+  params <- rbind(params)
+  
+# Then find the number of people:
+  N <- length(theta)
     
 #~~~~~~~~~~~~~~~~~#
 # Argument Checks #
@@ -20,10 +22,10 @@ function( params,       # parameters over which to calculate
 #~~~~~~~~~~~~~~~~#
 
 # To make calling things simpler:
-a <- params[ , 1, drop = FALSE]; b <- params[ , -1, drop = FALSE]
+  a <- params[ , 1, drop = FALSE]; b <- params[ , -1, drop = FALSE]
 
 # If there is only ONE theta:
-  if( length(theta) == 1 & length(delta) == 1 ){
+  if( N == 1 ){
         
     info <- 0
         
@@ -59,10 +61,7 @@ a <- params[ , 1, drop = FALSE]; b <- params[ , -1, drop = FALSE]
         
     } # END for LOOP
         
-  } # END if STATEMENT
-  
-# If there are many thetas
-  else{
+  } else{
       
     info <- 0
       
@@ -99,17 +98,23 @@ a <- params[ , 1, drop = FALSE]; b <- params[ , -1, drop = FALSE]
         
     } # END for LOOP
       
-  } # END else STATEMENT
+  } # END ifelse STATEMENT
  
  
 # If theta is a scalar, item information is a vector and test information is a scalar
 # If theta is a vector, item information is a matrix and test information is a vector
   
-  i.info <- { if( length(theta) == 1 )   info
-              else                     t(info) }
-                  
-  t.info <- { if( length(theta) == 1 ) sum(info)
-              else                     apply(i.info, MARGIN = 2, FUN = sum) }
+  if( N == 1 ){
+  
+    i.info <- info
+    t.info <- sum(info)
+    
+  } else{
+  	
+    i.info <- t(info)
+    t.info <- colSums(i.info)
+    
+  } # END ifelse STATEMENT
                   
                   
   return( list(item = i.info, test = t.info) )

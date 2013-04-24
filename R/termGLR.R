@@ -44,28 +44,18 @@ function( cat_par, cat_resp, cat_theta,
 # -> The GLR compares
 # ---> a) the likrat at the [thet - delt, thet + delt] with
 # ---> b) the likrat at other points.
-  theta   <- seq(min(catMiddle$int), max(catMiddle$int), by = .01)
+  theta   <- seq(min(catMiddle$range), max(catMiddle$range), by = .01)
   likVals <- logLik(u = cat_resp, x = cat_par, theta = theta)
 
 # Find the highest point on the likelihood ratio function:
   for( k in seq_along(bounds) ){
   
-# Find the preliminary likelihood based on the indifference region:
-    logLik.u <- logLik(u = cat_resp, x = cat_par, theta = bounds[k] + delta)
-    logLik.l <- logLik(u = cat_resp, x = cat_par, theta = bounds[k] - delta)
-  
-# Greater than bounds[i] + delta? Use it!
-    logLik.u2 <- ifelse( test = any(logLik.u < likVals[theta > bounds[k] + delta]),
-                         yes  = max(likVals[theta > bounds[k] + delta]),
-                         no   = logLik.u )
-                         
-# Lower than bounds[i] - delta? Use it!
-    logLik.l2 <- ifelse(test = any(logLik.l < likVals[theta < bounds[k] - delta]),
-                        yes  = max(likVals[theta < bounds[k] - delta]),
-                        no   = logLik.l)
+# Find the likelihood based on the indifference region:
+    logLik.u <- max( likVals[theta > bounds[k] + delta] )
+    logLik.l <- max( likVals[theta < bounds[k] - delta] )
   
 # Standard likelihood ratio ... as always!
-    likRat[k] <- logLik.u2 - logLik.l2
+    likRat[k] <- logLik.u - logLik.l
       
   } # END for LOOP
   

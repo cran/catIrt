@@ -5,6 +5,43 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
 ****************************************
+* Changes to catIrt 0.4-0 (2013-04-24) *
+****************************************
+
+o  Added "it.range" argument to the catStart/catMiddle list and to the itChoose
+   function to restrict the difficulty parameters (in a binary response model)
+   to be within a particular range.
+
+o  Changed some code to be neater, cleaner, etc.
+
+o  Fixed a bug in catIrt, so that letting catStart$n.select or catMiddle$n.select
+   be anything other than 1 would actually select between the top "n.select" items.
+
+o  Fixed a bug in simIrt so that the parameters did not need to have
+   column names for the function to correctly work.
+
+o  Fixed a bug in termGLR, so that the stopping rule would use the "range"
+   sub-argument of catMiddle rather than the depricated "int" sub-argument to
+   calculate the likelihoods.
+
+o  Fixed a bug in termCI, so that the stopping rule would only consider the
+   last value of SEM when forming a confidence interval.
+
+o  Fixed a small bug in print.summary.catIrt, so that the function would check
+   the n.start argument of catStart (rather than the n.it argument) to determine
+   how many starting items that the CAT administered.
+
+o  Fixed several bugs in catMiddle, so that the CAT would choose the starting
+   scoring method if the MLE wasn't achieved (and catMiddle$select = "MLE"),
+   and wouldn't error if the starting scoring method was "step".
+
+o  Fixed a bug whereby the catIrt function was not adequately determining
+   if the first vector of item parameters was the item number.  Now,
+   the item number can ONLY be attached if the parameters are outputted from
+   a catIrt function.
+
+
+****************************************
 * Changes to catIrt 0.3-0 (2012-09-12) *
 ****************************************
 

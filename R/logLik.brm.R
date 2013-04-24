@@ -28,7 +28,7 @@ function(u, x, theta,
       
     logLik <- {      u  * log( apply( x, MARGIN = 1, FUN = p.brm, theta = theta) ) +
                 (1 - u) * log( apply( x, MARGIN = 1, FUN = q.brm, theta = theta) ) }            
-    logLik <- apply(logLik, MARGIN = 1, FUN = sum)
+    logLik <- rowSums(logLik)
   } # END else STATEMENT
 
 

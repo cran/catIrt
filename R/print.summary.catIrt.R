@@ -203,7 +203,7 @@ function(x, digits = max(3, getOption("digits") - 3), ... ){
       middle.i  <- y$mod$catMiddle
       resp.i    <- y$cat_indiv[[id.i]]$cat_resp
       
-      a <- start.i$n.it
+      a <- start.i$n.start
       b <- which( { c(FALSE, diff(resp.i) != 0) |
       	            ( (resp.i != resp.min) & (resp.i != resp.max) ) } )[1]
       	            
@@ -211,7 +211,7 @@ function(x, digits = max(3, getOption("digits") - 3), ... ){
 #       - the response changes OR
 #       - the response isn't equal to the min/max possible response.
 
-# a) n.it in catStart
+# a) n.start in catStart
 # b) the first change in the response (min -- not min or max -- not max)
 # IF: i)    MLE out and score == "MLE" --> then b regardless.
 #     ii)   MLE out and score != "MLE" --> then minimum of a or b.
