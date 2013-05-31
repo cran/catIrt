@@ -14,8 +14,8 @@ for classification CAT (including an implementation of the SPRT, GLR, and CI met
 \tabular{ll}{
 Package:  \tab catIrt\cr
 Type:     \tab Package\cr
-Version:  \tab 0.4-0\cr
-Date:     \tab 2013-04-24\cr
+Version:  \tab 0.4-1\cr
+Date:     \tab 2013-05-31\cr
 License:  \tab GPL (>= 2)\cr
 LazyLoad: \tab yes\cr
 }

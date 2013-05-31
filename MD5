@@ -1,7 +1,6 @@
-c0451255285e6ed12230a6bdce415e93 *DESCRIPTION
+6a972ff8ad7672d233bfb8d0319dd1a9 *DESCRIPTION
 eb723b61539feef013de476e68b5c50a *LICENSE.txt
-1cb13df08c1e54f6c0bc54bcc580a37a *NAMESPACE
-6e1e96bc712218044343db3e111cbe3e *NEWS
+04b5b0a289914ae20fef226921679b60 *NAMESPACE
 2852c9b47fb9f10ec9f808820f48a339 *R/ExtractOperators.R
 bab9fcdccc0cd0d7618c578e6020e918 *R/FI.R
 84680ac08c38c901519301407dff8556 *R/FI.brm.R
@@ -12,9 +11,9 @@ c1b319c16d5a27d427bb659613bdf406 *R/KL.R
 9fff2c7a96b9f70a801b5fb939d35f58 *R/KL.brm.R
 653a002fa6da908f9c0e7aa1dc4a01d2 *R/KL.default.R
 ba7c0fd682a328241e427b31f3469f2c *R/KL.grm.R
-dfac23f46f241e58a8307b2fd705c260 *R/WFI.R
+60a8b8ea34ff2fe43c9a55a515931078 *R/WFI.R
 3ab929ef6c22bd90d9fc8e9e644e343c *R/bmeEst.R
-9b24acf305b59cce959328a17f4792f5 *R/catIrt.R
+0cc35899fe86e94fadbac3c0de1d1bfd *R/catIrt.R
 10dd358cefd1ee58d401894e17e78a3d *R/eapEst.R
 7c41952852ab1ae4be2f3783b386ca97 *R/itChoose.R
 b22c69fb78c50d9379ca89e7e81755f8 *R/lder1.brm.R
@@ -45,9 +44,10 @@ dc915279387a1b775e66d517c0cd5de9 *R/summary.catIrt.R
 b5eb8ef9e852b14c7374a71bb103a0ea *R/termGLR.R
 94925c89b3af4a14d91679da2d6a9c31 *R/termSPRT.R
 1f42883b47a1e5e98bd44160b60c17f4 *R/wleEst.R
+bd9f19b4599532b89b95495be9dea450 *inst/NEWS.Rd
 c949e270cd7443fc1b65ba4b5221372c *man/FI.Rd
 b2ecfb5bb3b9cc0f6802cccefbfadd74 *man/KL.Rd
-c7c7d0e8189156f569d63f30eb223b2e *man/catIrt-package.Rd
+36efa79c8c8621c9aeda52813cd4db07 *man/catIrt-package.Rd
 f1fc97cfdb880b20a61e572bfbf0dcae *man/catIrt.Rd
 977df0f679d8d4aaddaddcc5d14d5af0 *man/itChoose.Rd
 e3f812bf780e1f0d7f883158e964700f *man/mleEst.Rd

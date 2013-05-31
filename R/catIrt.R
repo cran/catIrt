@@ -1186,12 +1186,15 @@ catIrt <- function( params, mod = c("brm", "grm"),
       setTxtProgressBar(pb, value = i)
 
   } # END for i LOOP
+  
+  if( progress )
+    cat("\n")
 
 
 # And if we had to change EAP to BME, let people know:
   if( exists("msg", where = environment()) )
     if( msg )
-      cat("\nToo large an item bank for full-test EAP estimation. Changed estimation for full-test to BME.\n\n")   
+      cat("\nToo large an item bank for full-test EAP estimation. Changed estimation for full-test to BME.\n")  
     
 #~~~~~~~~~~~~~~~~~~~#
 # FINISHING THE CAT #

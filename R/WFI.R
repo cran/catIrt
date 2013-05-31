@@ -16,6 +16,10 @@ WFI <- function( left_par, mod = c("brm", "grm"),
 # a) The parameters to this point in the CAT, and
 # b) The responses to this point in the CAT.
 
+# Turn params into a matrix:
+  left_par <- rbind(left_par)
+  cat_par  <- rbind(cat_par)
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 # Information and Likelihood #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -37,17 +41,17 @@ WFI <- function( left_par, mod = c("brm", "grm"),
   u <- max( tmp.x[signif(tmp.y) != 0 & !is.na(tmp.y)] )
   
 # Set up the bounds of integration:
-    X  <- seq(l, u, length = quad)
+  X  <- seq(l, u, length = quad)
   
 # The Likelihood function used in the integration:
   LikFun  <- function( ... )
-               exp( get(paste("logLik.", mod, sep = "") )( ... ) )
+    exp( get(paste("logLik.", mod, sep = "") )( ... ) )
   FishFun <- function( ... )
-               get( paste("FI.", mod, sep = "") )( ... )
+    get( paste("FI.", mod, sep = "") )( ... )
                
 # The Likelihood and FI for all of the items thus far:
   wfi.lik  <- LikFun(theta = X, u = cat_resp, x = cat_par)
-  wfi.fish <- FishFun(params = left_par, theta = X, type = "expected")$item         
+  wfi.fish <- FishFun(params = left_par, theta = X, type = "expected")$item       
                
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~#
