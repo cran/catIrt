@@ -3,8 +3,6 @@ IKL <- function( params,      # parameters over which to calculate
                  delta = .1,  # the indifference region specification
                  quad = 33 )  # the number of quadrature points
 {
-	
-  require(sfsmisc)
   
 # This function finds Integrated KL-Information:
 

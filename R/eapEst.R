@@ -5,7 +5,6 @@ function(resp,                             # The vector of responses
          mod = c("brm", "grm"),            # The model                        
          ddist = dnorm, quad = 33, ... )   # The prior distribution stuff:
 {
-  require(sfsmisc)
   
 # First turn params into a matrix:
   params <- rbind(params)

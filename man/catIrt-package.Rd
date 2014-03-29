@@ -14,13 +14,13 @@ for classification CAT (including an implementation of the SPRT, GLR, and CI met
 \tabular{ll}{
 Package:  \tab catIrt\cr
 Type:     \tab Package\cr
-Version:  \tab 0.4-1\cr
-Date:     \tab 2013-05-31\cr
+Version:  \tab 0.4-2\cr
+Date:     \tab 2014-03-29\cr
 License:  \tab GPL (>= 2)\cr
 LazyLoad: \tab yes\cr
 }
 
 }
 \author{
-Maintainer: Steven W. Nydick <nydic001@umn.edu>
+Maintainer: Steven W. Nydick \email{nydic001@umn.edu}
 }

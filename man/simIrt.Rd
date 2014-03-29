@@ -80,11 +80,11 @@ van der Linden, W. J. & Hambleton, R. K.  (2010).  \emph{Handbook of Modern Item
 }
 
 \author{
-Steven W. Nydick <nydic001@umn.edu>
+Steven W. Nydick \email{nydic001@umn.edu}
 }
 
 \seealso{
-\code{\link{catIrt}}, \code{\link[catR]{createItemBank}}
+\code{\link{catIrt}}
 }
 
 \examples{

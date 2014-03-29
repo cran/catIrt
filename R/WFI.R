@@ -5,8 +5,6 @@ WFI <- function( left_par, mod = c("brm", "grm"),
                  quad = 33,
                  ddist = dnorm, ... )
 {
-	
-  require(sfsmisc)
   
 # This function finds Weighted Fisher Information:
 # -- Weighted on the likelihood function, or

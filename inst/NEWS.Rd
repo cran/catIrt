@@ -1,6 +1,16 @@
 \name{NEWS}
 \title{Changes/Updates to the catIrt Package}
 
+\section{Changes in version 0.4-2}{
+  \itemize{
+    \item Fixed manual links to be consistent with updates to the catR package, namely
+          the deletion of the createItemBank function.
+
+    \item Fixed another bug in WFI (weighted Fisher information), so that it would not error
+          if only 0-1 items had been taken in the CAT.
+  }
+}
+
 \section{Changes in version 0.4-1}{
   \itemize{
     \item Added NEWS.Rd to be compatible with R's news function.

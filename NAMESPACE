@@ -1,6 +1,10 @@
 # C Source Code (package name, not original file name):
 useDynLib(catIrt)
 
+# Imported Packages
+importFrom(sfsmisc, integrate.xy)
+importFrom(numDeriv, hessian)
+
 # Main CAT Functions:
 export(catIrt, simIrt)
 

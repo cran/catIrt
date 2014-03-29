@@ -415,12 +415,12 @@ Weiss, D. J., & Kingsbury, G. G. (1984). Application of computerized adaptive te
 }
 
 \author{
-Steven W. Nydick <nydic001@umn.edu>
+Steven W. Nydick \email{nydic001@umn.edu}
 }
 
 \seealso{
 \code{\link{FI}}, \code{\link{itChoose}}, \code{\link{KL}}, \code{\link{mleEst}},
-\code{\link[catR]{randomCAT}}, \code{\link{simIrt}}
+\code{\link{simIrt}}
 }
 
 \examples{

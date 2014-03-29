@@ -201,12 +201,12 @@ Veerkamp, W. J. J., & Berger, M. P. F.  (1997).  Some new item selection criteri
 }
 
 \author{
-Steven W. Nydick <nydic001@umn.edu>
+Steven W. Nydick \email{nydic001@umn.edu}
 }
 
 \seealso{
 \code{\link{catIrt}}, \code{\link{FI}}, \code{\link{integrate.xy}}, \code{\link{KL}},
-\code{\link{mleEst}}, \code{\link[catR]{nextItem}}, \code{\link{simIrt}}
+\code{\link{mleEst}}, \code{\link{simIrt}}
 }
 
 \examples{

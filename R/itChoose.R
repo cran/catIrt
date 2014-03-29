@@ -102,7 +102,7 @@ itChoose <- function( left_par, mod = c("brm", "grm"),
 #  -- we need to figure out which boundary we should be using
 #  -- we need to figure out Fisher Info at that boundary
   if( { select == "UW-FI" |
-  	    ( ( select %in% c("LF-WI", "PW-FI") ) & ( any( is.na(cat_resp) ) | ( length(cat_resp) == 0 ) ) ) } ){
+  	    ( ( select %in% c("LW-FI", "PW-FI") ) & ( any( is.na(cat_resp) ) | ( length(cat_resp) == 0 ) ) ) } ){
   
     info <- FI(params = left_par[ , -1], theta = theta, type = "expected")$item
     
