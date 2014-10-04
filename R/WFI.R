@@ -38,8 +38,9 @@ WFI <- function( left_par, mod = c("brm", "grm"),
   l <- min( tmp.x[signif(tmp.y) != 0 & !is.na(tmp.y)] )
   u <- max( tmp.x[signif(tmp.y) != 0 & !is.na(tmp.y)] )
   
-# Set up the bounds of integration:
-  X  <- seq(l, u, length = quad)
+# Set up the bounds of integration and turn cat_resp into a matrix:
+  X        <- seq(l, u, length = quad)
+  cat_resp <- matrix(cat_resp, nrow = quad, ncol = nrow(cat_par), byrow = TRUE)
   
 # The Likelihood function used in the integration:
   LikFun  <- function( ... )
@@ -48,9 +49,13 @@ WFI <- function( left_par, mod = c("brm", "grm"),
     get( paste("FI.", mod, sep = "") )( ... )
                
 # The Likelihood and FI for all of the items thus far:
-  wfi.lik  <- LikFun(theta = X, u = cat_resp, x = cat_par)
-  wfi.fish <- FishFun(params = left_par, theta = X, type = "expected")$item       
+  wfi.lik  <- LikFun(u = cat_resp, theta = X, params = cat_par)
+  wfi.fish <- FishFun(params = left_par, theta = X, type = "expected")$item  
+  
+  if( nrow(left_par) == 1 )
+    wfi.fish <- cbind(wfi.fish)
                
+# Note: Turning cat_resp into a matrix is probably inefficient but transparent.
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~#
 # Set-Up Integral Function #
@@ -58,11 +63,11 @@ WFI <- function( left_par, mod = c("brm", "grm"),
 
   if( type == "likelihood" ){
   	
-    Y <- t( t(wfi.fish) * wfi.lik )
+    Y <- wfi.fish * wfi.lik
     
   } else if( type == "posterior" ){
     
-    Y <- t( t(wfi.fish) * wfi.lik * ddist(x = X, ... ) )
+    Y <- wfi.fish * wfi.lik * ddist(x = X, ... ) 
    
   } # END ifelse FUNCTIONS
 
@@ -70,7 +75,7 @@ WFI <- function( left_par, mod = c("brm", "grm"),
 # And Integrate #
 #~~~~~~~~~~~~~~~#
 
-  info <- apply(Y, MARGIN = 1, FUN = integrate.xy, x = X)
+  info <- apply(Y, MARGIN = 2, FUN = integrate.q, x = X)
   
   return( list(item = info, type = type) )
   

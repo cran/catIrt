@@ -1,9 +1,10 @@
 mleEst <-
-function(resp,                         # The vector of responses
-         params,                       # The item parameters
-         range = c(-6, 6),             # The integer to maximize over
-         mod = c("brm", "grm"),        # The model
-         ... ){
+function( resp,                         # The vector of responses
+          params,                       # The item parameters
+          range = c(-6, 6),             # The integer to maximize over
+          mod = c("brm", "grm"),        # The model
+          ... )
+{
 
 # First turn params into a matrix:
   params <- rbind(params)
@@ -46,7 +47,7 @@ function(resp,                         # The vector of responses
   for( i in 1:dim(resp)[1] ){
     likFun <- paste("logLik.", mod, sep = "")
     est[i] <- optimize( get(likFun), lower = l, upper = u, maximum = TRUE,
-                        x = params, u = resp[i, ],
+                        u = resp[i, ], params = params,
                         type = "MLE" )$max
   } # END for LOOP
                 
@@ -54,11 +55,11 @@ function(resp,                         # The vector of responses
   est <- round(est, digits = 4)
   
 # And pull out the information as well as the SEM:
-  info <- get(paste("FI.", mod, sep = ""))(params = params,
-                                           theta = est,
-                                           type = "observed",
-                                           resp = resp)
+  info <- get(paste("FI.", mod, sep = ""))( params = params,
+                                            theta = est,
+                                            type = "observed",
+                                            resp = resp )
   
-  list(theta = est, info = info$test, sem = info$sem)
+  list( theta = est, info = info$test, sem = info$sem )
   
 } # END mleEst FUNCTION

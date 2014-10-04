@@ -1,20 +1,15 @@
-# p'' = (1 - c)*a^2*((exp - exp^2)/(1 + exp)^3) = a*[1 - exp(a*(thet - b))]*q*pder1
-# (or alternatively: a^2*[p*q^2 - p^2*q])
+# p'' = a*[1 - exp(a*(thet - b))]*q^(1)*pder1
+# - p^(1): 2PL probability
+# - q^(1): 1 - p^(1)
 
 pder2.brm <-
-function(x, theta){
+function(theta, params){
   
-# If x is a vector: a, b, and c are elements of that vector
-  if( is.null( dim(x) ) )    
-    { a <- x[ 1 ]; b <- x[ 2 ]; c <- x[ 3 ] }
-    
-# If x is a matrix: a, b, and c are columns of that matrix
-  else
-    { a <- x[ , 1]; b <- x[ , 2]; c <- x[ , 3] }
-    
-  ex <- exp( a * ( theta - b ) )
-    
-  return( (1 - c) * a^2 * ( ( ex - ex^2 ) / ( 1 + ex )^3 ) )
-    
+# Call the appropriate c-function:
+  pder2 <- .Call("pder2brm", theta, params)
+  
+# Matrix if n_ppl > 1, vector if n_ppl = 1:
+  return(pder2)
+     
 } # END pder2.brm FUNCTION
 

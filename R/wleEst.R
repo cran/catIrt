@@ -1,9 +1,9 @@
 wleEst <-
-function(resp,                         # The vector of responses
-         params,                       # The item parameters
-         range = c(-6, 6),             # The integer to maximize over
-         mod = c("brm", "grm"),        # The model
-         ...){
+function( resp,                         # The vector of responses
+          params,                       # The item parameters
+          range = c(-6, 6),             # The integer to maximize over
+          mod = c("brm", "grm"),        # The model
+          ... ){
   
 # First turn params into a matrix:
   params <- rbind(params)
@@ -46,25 +46,26 @@ function(resp,                         # The vector of responses
 # Then, maximize the loglikelihood function over that interval for each person:
   for( i in 1:dim(resp)[1] ){
     lderFun <- paste("lder1.", mod, sep = "")
-    est[i]  <- uniroot( get(lderFun), lower = l, upper = u,
-                        x = params, u = resp[i, ], type = "WLE")$root
-    d[i]    <- { get(lderFun)(u = resp[i, ], x = params, theta = est[i], type = "WLE") -
-    	             get(lderFun)(u = resp[i, ], x = params, theta = est[i], type = "MLE") }
+    est[i]  <- uniroot( get(lderFun), lower = l, upper = u, extendInt = "yes",
+                        u = resp[i, ], params = params, type = "WLE" )$root
+    d[i]    <- { get(lderFun)( u = resp[i, ], theta = est[i], params = params, type = "WLE" ) -
+    	             get(lderFun)( u = resp[i, ], theta = est[i], params = params, type = "MLE" ) }
   } # END for LOOP
                           
-# Round the estimated value to three/four? decimal places:          
+# Round the estimated value to three/four? decimal places:
+  est <- pmax(l, pmin(u, est))            
   est <- round(est, digits = 4)
   
 # And pull out the information as well as the SEM:
-  info <- get(paste("FI.", mod, sep = ""))(params = params,
-                                           theta = est,
-                                           type = "observed",
-                                           resp = resp)$test
+  info <- get(paste("FI.", mod, sep = ""))( params = params,
+                                            theta = est,
+                                            type = "observed",
+                                            resp = resp )$test
 
-# Actual information corresponding to WLE:
-  sem <- sqrt( (info + d^2)/info^2 )
-  
-  list(theta = est, info = info, sem = sem)
+
+# Note: See Warm for the WLE SEM.
+ 
+  return( list( theta = est, info = info, sem = sqrt( (info + d^2)/info^2 ) ) )
   
 } # END wleEst FUNCTION
 

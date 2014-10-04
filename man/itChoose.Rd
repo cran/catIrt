@@ -205,7 +205,7 @@ Steven W. Nydick \email{nydic001@umn.edu}
 }
 
 \seealso{
-\code{\link{catIrt}}, \code{\link{FI}}, \code{\link{integrate.xy}}, \code{\link{KL}},
+\code{\link{catIrt}}, \code{\link{FI}}, \code{\link{KL}},
 \code{\link{mleEst}}, \code{\link{simIrt}}
 }
 

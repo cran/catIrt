@@ -21,37 +21,33 @@ function( params,        # parameters over which to calculate
 # KL Information #
 #~~~~~~~~~~~~~~~~#
 
-  if( N == 1 ){
-    p0 <- p.brm(params, theta - delta); p1 <- p.brm(params, theta + delta)
-    q0 <- q.brm(params, theta - delta); q1 <- q.brm(params, theta + delta)
-  } else{
-    p0 <- apply(params, MARGIN = 1, FUN = p.brm, theta = theta - delta)
-    p1 <- apply(params, MARGIN = 1, FUN = p.brm, theta = theta + delta)
- 
-    q0 <- apply(params, MARGIN = 1, FUN = q.brm, theta = theta - delta)
-    q1 <- apply(params, MARGIN = 1, FUN = q.brm, theta = theta + delta)
-  } # END ifelse STATEMENT
+## Calculating the prob given particular thetas ##
+  p0 <- p.brm(theta - delta, params)
+  p1 <- p.brm(theta + delta, params)
+  q0 <- 1 - p0
+  q1 <- 1 - p1
   
 # To prevent computation problems, work with logs and not probabilities:
   info <- p1 * ( log(p1) - log(p0) ) + q1 * ( log(q1) - log(q0) )
+
   
 # If theta is a scalar, item information is a vector and test information is a scalar
 # If theta is a vector, item information is a matrix and test information is a vector
   
-  if( N == 1 ){
+  if( length(theta) == 1 ){
   
     i.info <- info
     t.info <- sum(info)
     
   } else{
   	
-    i.info <- t(info)
-    t.info <- colSums(i.info)
+    i.info <- info
+    t.info <- rowSums(i.info)
     
   } # END ifelse STATEMENT
                   
                   
-  return( list(item = i.info, test = t.info) )
+  return( list(item = drop(i.info), test = t.info) )
   
 } # END KL.brm FUNCTION
 

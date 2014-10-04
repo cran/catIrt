@@ -1,39 +1,25 @@
 # l = sum[ u*log(p) + (1 - u)*log(1 - p) ] #
 
 logLik.brm <-
-function(u, x, theta,
-         type  = c("MLE", "BME"),
-         ddist = dnorm, ... ) # ddist and ... are prior distribution stuff
+function( u, theta, params,
+          type  = c("MLE", "BME"),
+          ddist = dnorm, ... ) # ddist and ... are prior distribution stuff
 {
   
-# u is the response, and x are the parameters.
+# u is the response, theta is ability, and params are the parameters.
 
-  if( missing(type) )
-    type <- "MLE"
+  type <- type[1]
 
-## Calculating the loglikelihood without the Bayesian part: ##
-
-# If thet is a scalar, direct calculation is the quickest.
-  if( length(theta) == 1 ){
-  	
-  	logLik <- sum( u * log( p.brm(x, theta) ) + (1 - u) * log( q.brm(x, theta) ) )
-  	
-  } else{
-
-# If theta is a matrix, we need to use the apply command.
-  	
-# The following is the only way to get the responses to line up:
-  	if( is.null( dim(u) ) )
-      u <- matrix(u, nrow = length(theta), ncol = dim(x)[1], byrow = TRUE )
-      
-    logLik <- {      u  * log( apply( x, MARGIN = 1, FUN = p.brm, theta = theta) ) +
-                (1 - u) * log( apply( x, MARGIN = 1, FUN = q.brm, theta = theta) ) }            
-    logLik <- rowSums(logLik)
-  } # END else STATEMENT
-
-
-## Now, the Bayesian part: ##
+## Calculating the loglikelihood without the Bayesian part: ##  
+  p <- p.brm(theta, params)
   
+  if( is.null( dim(u) ) & (length(theta) > 1) & !is.null( dim(params) ) )
+    logLik <- t( u * t( log(p) ) + (1 - u) * t( log(1 - p) ) )
+  else
+    logLik <- u * log(p) + (1 - u) * log(1 - p)
+
+
+## Now, the Bayesian part: ##  
   if( type == "MLE" )
     bme <- 1
   if( type == "BME" )
@@ -42,6 +28,11 @@ function(u, x, theta,
 # if there is a silly prior, set it to something very small
   bme <- ifelse(test = bme <= 0, yes = bme <- 1e-15 , no = bme)
   
-  return( logLik + log(bme) )
+## Returning Scalar or Vector of logLik's ##
+  if( length(theta) == 1 ){
+    return( sum(logLik) + log(bme) )
+  } else{
+    return( rowSums(logLik) + log(bme) )
+  } # END ifelse STATEMENT
   
 } # END logLik.brm FUNCTION

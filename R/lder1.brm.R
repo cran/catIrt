@@ -1,33 +1,50 @@
 # l' = sum[ (u - p)*p'/(p*q) ] #
 
 lder1.brm <-
-function(u, x, theta,
-         type = c("MLE", "WLE")  ) # WLE gives weighted maximum likelihood score fct
+function( u, theta, params,
+          type = c("MLE", "WLE")  ) # WLE gives weighted maximum likelihood score fct
 {  
 
-# u is the response, and x are the parameters.
+# u is the response, theta is ability, and params are the parameters.
+
+  type  <- type[1]
+  N     <- length(theta)
   
-# Calculating the probability of response:
-  p <- p.brm(x, theta)
-  q <- 1 - p
+## Calculating the probability of response: ##
+  p  <- p.brm(theta, params)
+  q  <- 1 - p
+  pq <- p * q 
   
-# Calculating the first and second derivatives:
-  pder1 <- pder1.brm(x, theta)
-  pder2 <- pder2.brm(x, theta)
+## Calculating the first and second derivatives: ##
+  pder1 <- pder1.brm(theta, params)
+  pder2 <- pder2.brm(theta, params)
   
+## Calculating lder1 for normal/Warm: ##
   if( type == "MLE" ){
   	
-    return( sum( (u - p) * pder1 / (p * q) ) )
+  	lder1 <- ( u - p ) * pder1 / pq
     
-  } else if( type == "WLE" ){
+  } else{
   	
 # Calculating Warm correction:
-    I <- sum( pder1^2 / (p * q) )
-    H <- sum( (pder1 * pder2)  / (p * q) )
+    if(N == 1){
+    	  I <- sum( pder1^2 / pq )
+    	} else{
+      I <- rowSums( pder1^2 / pq )
+    } # END ifelse STATEMENT
     
-    return( sum( (u - p) * pder1 / (p * q) ) + H / (2 * I) )
+    H <- ( pder1 * pder2 )  / pq
     
-  }
+    lder1 <- ( u - p ) * pder1 / pq + H / ( 2 * I )
+    
+  } # END ifelse STATEMENT
+  
+## Returning Scalar or Vector of logLik's ##
+  if(N == 1){
+    return( sum(lder1) )
+  } else{
+    return( rowSums(lder1) )
+  } # END ifelse STATEMENT
   
 } # END lder1.brm FUNCTION
 

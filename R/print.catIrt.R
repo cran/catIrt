@@ -29,9 +29,21 @@ function(x, digits = max(3, getOption("digits") - 3), ... )
   if( any(x$mod$catTerm$term == "fixed") )
     cat( "  Fixed criterion of ", x$mod$catTerm$n.max, " items.\n", sep = "" )
     
-## VARIABLE ##
-  if( any(x$mod$catTerm$term == "var") )
-    cat( "  Variable criterion of an SEM less than ", x$mod$catTerm$v.term, ".\n", sep = "" )
+## PRECISION ##
+  if( any(x$mod$catTerm$term == "precision") ){
+    y <- switch( x$mod$catTerm$p.term$method,
+                 threshold = paste("an SEM less than ", x$mod$catTerm$p.term$crit, sep = ""),
+                 change    = paste("a change in SEM less than ", x$mod$catTerm$p.term$crit, sep = "") ) 
+    cat( "  Variable criterion of ", y, ".\n", sep = "" )
+  }
+  
+## INFO ##
+  if( any(x$mod$catTerm$term == "info") ){
+    y <- switch( x$mod$catTerm$p.term$method,
+                 threshold = paste("Fisher information greater than ", x$mod$catTerm$i.term$crit, sep = ""),
+                 change    = paste("a change in Fisher information less than ", x$mod$catTerm$i.term$crit, sep = "") ) 
+    cat( "  Variable criterion of ", y, ".\n", sep = "" )
+  }
     
 ## CLASSIFICATION ##
   if( any(x$mod$catTerm$term == "class") ){

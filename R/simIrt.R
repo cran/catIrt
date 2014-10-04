@@ -64,8 +64,15 @@ function( theta = seq(-3, 3, by = .1), # a scalar/vector of theta values
 # Simulating Responses #
 #~~~~~~~~~~~~~~~~~~~~~~#
 
-# Call C to simulate responses to the model ("brm" or "grm" or others)
-  sim <- .Call(mod, theta, params)
+# Find the response probabilities ("brm" or "grm" or others)
+  p <- get( paste0("p.", mod) )(theta, params)
+  
+# Simulate responses (depending on the model):
+  if( mod == "brm" ){
+  	sim <- ( p >= runif( length(p) ) ) + 0
+  } else{
+    sim <- .Call("simPoly", p, ncol(params))
+  } # END ifelse STATEMENT
   
 # Add the item number as the first column of params:
   params              <- cbind(1:nrow(params), params)
@@ -78,7 +85,7 @@ function( theta = seq(-3, 3, by = .1), # a scalar/vector of theta values
   class(sim)    <- c(mod, "matrix")
   class(params) <- c(mod, "matrix")
 
-  ret <- list(resp = sim, params = params, theta = theta)
+  ret <- list(resp = rbind(sim), params = params, theta = theta)
   
 # The above two lines make the code somewhat easy to generalize the model.
 

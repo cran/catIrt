@@ -1,6 +1,41 @@
 \name{NEWS}
 \title{Changes/Updates to the catIrt Package}
 
+\section{Changes in version 0.5-0}{
+  \itemize{
+    \item Wrote all of the probability and derivatives of probability functions
+          in C for speed and code clarity.
+
+    \item Wrote a quick integration function (that takes function arguments) to calculate
+          Sympson's rule and a quick integration function (that takes vector arguments)
+          to calculate the trapezoidal rule.  The former is now implemented in eapEst,
+          and the latter is implemented to calculate weighted Fisher and KL information
+          for itChoose.
+
+    \item Changed simIrt to calculate probabilities in C before simulating responses
+          (rather than calculating probabilities and simulating responses at the
+          same time).  This change can result in a slightly different matrix of
+          responses to items due to the alteration of simulation order.
+
+    \item Changed FI and KL functions so that item information would be presented in a
+          person by item dimension matrix rather than an item by person dimension
+          matrix.
+
+    \item Fixed a bug in catIrt, so that if in non-interactive/batch mode, the CAT
+          would not automatically set n.max to nrow(params).
+
+    \item Fixed a bug in print.catIrt, so that it would display the correct
+          precision-based stopping rule.
+  }
+}
+
+\section{Changes in version 0.4-3}{
+  \itemize{
+    \item Fixed a bug in wleEst, so that the interval would naturally extend if the
+          first derivative of the log-likelihood evaluated to the same sign.
+  }
+}
+
 \section{Changes in version 0.4-2}{
   \itemize{
     \item Fixed manual links to be consistent with updates to the catR package, namely

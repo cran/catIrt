@@ -162,18 +162,13 @@ to include enough items in the model to allow for reasonable estimation.
 Weighted likelihood estimation (\code{wleEst}) uses \code{uniroot} to find the root
 of the modified score function, so that the end points of \option{range} must evaluate
 to opposite signs (or zero).  Rarely, the end points of \option{range} will evaluate
-to the same sign, so that \code{uniroot} will error.  In these cases, the user
-should try a different estimation method.  This will be fixed in future versions.
-
-The idea for integrating using \code{integrate.xy} from the \code{sfsmisc} package
-was taking from \code{eapEst} in the \code{catR} package, although the implementation is
-slightly different.  The original attempt at using \code{integrate} did not work well
-and \code{integrate.xy} provided an easy and flexible alternative.
+to the same sign, so that \code{uniroot} will error.  In these cases, uniroot will
+extend the interval until the end points of the (modified) range are opposite signs.
 }
 
 \seealso{
-\code{\link{catIrt}}, \code{\link[irtoys]{eap}}, \code{\link[catR]{eapEst}},
-\code{\link{hessian}}, \code{\link{integrate.xy}}, \code{\link[irtoys]{mlebme}},
+\code{\link{catIrt}}, \code{\link[irtoys]{eap}},
+\code{\link{hessian}}, \code{\link[irtoys]{mlebme}},
 \code{\link{simIrt}}, \code{\link{uniroot}}
 }
 

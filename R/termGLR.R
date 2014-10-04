@@ -45,7 +45,7 @@ function( cat_par, cat_resp, cat_theta,
 # ---> a) the likrat at the [thet - delt, thet + delt] with
 # ---> b) the likrat at other points.
   theta   <- seq(min(catMiddle$range), max(catMiddle$range), by = .01)
-  likVals <- logLik(u = cat_resp, x = cat_par, theta = theta)
+  likVals <- logLik(u = cat_resp, params = cat_par, theta = theta)
 
 # Find the highest point on the likelihood ratio function:
   for( k in seq_along(bounds) ){

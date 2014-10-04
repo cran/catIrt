@@ -1,17 +1,13 @@
-# p' = a*p
+# p' = a*(p.ku*q.ku - p.kl*q.kl)
 
 pder1.grm <-
-function(x, theta){
+function(theta, params){
   
-# If x is a vector: a and b are elements of that vector
-  if( is.null( dim(x) ) )    
-    { a <- x[1]; b.k <- x[2] }
-    
-# If x is a matrix: a, b, and c are columns of that matrix
-  else
-    { a <- x[ , 1]; b.k <- x[ , 2] }
-    
-  return( a * p.grm(x, theta) * q.grm(x, theta) )
-    
+# Call the appropriate c-function:
+  pder1 <- .Call("pder1grm", theta, params)
+  
+# Matrix of (n_ppl * n_cat) x n_it:
+  return(pder1)
+ 
 } # END pder1.grm FUNCTION
 

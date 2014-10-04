@@ -1,18 +1,14 @@
-# p' = (1 - c)*a*p*q
+# p' = (1 - c)*a*p^(1)*q^(1)
+# - p^(1): 2PL probability.
+# - q^(1): 1 - p^(1).
 
 pder1.brm <-
-function(x, theta){
+function(theta, params){
   
-# If x is a vector: a, b, and c are elements of that vector
-  if( is.null( dim(x) ) )    
-    { a <- x[1]; b <- x[2]; c <- x[3] }
-    
-# If x is a matrix: a, b, and c are columns of that matrix
-  else
-    { a <- x[ , 1]; b <- x[ , 2]; c <- x[ , 3] }
-    
-  ex <- exp( a * ( theta - b ) )
-    
-  return( (1 - c) * a * ex / ( 1 + ex )^2 )
-    
+# Call the appropriate c-function:
+  pder1 <- .Call("pder1brm", theta, params)
+  
+# Matrix if n_ppl > 1, vector if n_ppl = 1:
+  return(pder1)
+ 
 } # END pder1.brm FUNCTION

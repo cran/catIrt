@@ -1,9 +1,9 @@
 bmeEst <-
-function(resp,                         # The vector of responses
-         params,                       # The item parameters
-         range = c(-6, 6),             # The integer to maximize over
-         mod = c("brm", "grm"),        # The model
-         ddist = dnorm, ... ){         # The prior distribution stuff:
+function( resp,                         # The vector of responses
+          params,                       # The item parameters
+          range = c(-6, 6),             # The integer to maximize over
+          mod = c("brm", "grm"),        # The model
+          ddist = dnorm, ... ){         # The prior distribution stuff:
 
 # First turn params into a matrix:
   params <- rbind(params)
@@ -47,7 +47,7 @@ function(resp,                         # The vector of responses
   for( i in 1:dim(resp)[1] ){
     likFun <- paste("logLik.", mod, sep = "")
     est[i] <- optimize( get(likFun), lower = l, upper = u, maximum = TRUE,
-                        x = params, u = resp[i, ], type = "BME",
+                        u = resp[i, ], params = params, type = "BME",
                         ddist = ddist, ... )$max                    
     hes[i] <- hessian( func = function(x, ... ) log( ddist(x, ... ) ),
                        x = est[i], method = "Richardson", ... )
@@ -57,15 +57,14 @@ function(resp,                         # The vector of responses
   est <- round(est, digits = 4)
 
 # And pull out the information as well as find the SEM:
-  info <- get(paste("FI.", mod, sep = ""))(params = params,
-                                           theta = est,
-                                           type = "observed",
-                                           resp = resp)$test
-  sem  <- (info - hes)^(-1/2) # see Keller (p. 10)
+  info <- get(paste("FI.", mod, sep = ""))( params = params,
+                                            theta = est,
+                                            type = "observed",
+                                            resp = resp )$test
+
+# Note: See Keller (p. 10) for the BME SEM.
   
-# NOTE: NEED TO ADD THE ACTUAL INFORMATION/SEM CORRESPONDING TO BME?
-  
-  list(theta = est, info = info, sem = sem)
+  return( list( theta = est, info = info, sem = (info - hes)^(-1/2) ) )
   
 } # END bmeEst FUNCTION
 

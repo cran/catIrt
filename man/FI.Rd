@@ -94,7 +94,7 @@ of \eqn{\hat{\theta}_i} after test termination.
 
 \value{
 \code{FI}, \code{FI.brm}, and \code{FI.grm} return a list of the following elements:
-  \item{item}{either: (1) a \eqn{J \times N} matrix of item information for each simulee to
+  \item{item}{either: (1) a \eqn{N \times J} matrix of item information for each simulee to
               each item; (2) a \eqn{J}-length vector of item information for one simulee to
               each item; or (3) an \eqn{N}-length vector of item information for all simulees
               to one item, depending on the dimensions of \command{params} and \command{theta}.

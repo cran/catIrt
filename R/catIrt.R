@@ -544,11 +544,13 @@ catIrt <- function( params, mod = c("brm", "grm"),
  
 ## d) n.max ## (must be an integer greater than n.min AND n.it or "all")
   if( { is.null(catTerm$n.max) |
-  	    !any(catTerm$n.max %in% "all") |
   	    !all(catTerm$n.max %in%  max(catTerm$n.min, catStart$n.it):nrow(params)) } ){
 
+    if(catTerm$n.max == "all" | catTerm$n.max == "'all'" | catTerm$n.max == "\"all\"")
+      catTerm$n.max <- nrow(params)
+      
 # --> Make sure 'n.it' is a positive integer that is not too small of a number. 	    	  
-    if( interactive() ){   			
+    if( interactive() ){			
       while( !( { (length(catTerm$n.max) == 1) &
       	          all(catTerm$n.max %in%  max(catTerm$n.min, catStart$n.it):nrow(params)) } ) ){      	
         catTerm$n.max <- readline("Select a maximum number of items or 'all': ")
@@ -1013,7 +1015,8 @@ catIrt <- function( params, mod = c("brm", "grm"),
     cat_sem.i   <- cat_resp.i
     
 # Setting the classes, so the other functions will work.
-    class(cat_resp.i) <- class(cat_par.i) <- class(resp)
+    class(cat_par.i)  <- class(resp)
+    class(cat_resp.i) <- mod
     
 # A vector indicating whether or not the examinee has taken an item:
     it_flags    <- rep(0, nrow(params))

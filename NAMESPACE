@@ -2,7 +2,6 @@
 useDynLib(catIrt)
 
 # Imported Packages
-importFrom(sfsmisc, integrate.xy)
 importFrom(numDeriv, hessian)
 
 # Main CAT Functions:

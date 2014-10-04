@@ -40,8 +40,8 @@ function( cat_par, cat_resp, cat_theta,
 # The logLikelihood ratio for each bounds
   for( k in seq_along(bounds) ){
   
-    likRat[k] <- { logLik(u = cat_resp, x = cat_par, theta = bounds[k] + delta) -
-                   logLik(u = cat_resp, x = cat_par, theta = bounds[k] - delta) }
+    likRat[k] <- { logLik(u = cat_resp, params = cat_par, theta = bounds[k] + delta) -
+                   logLik(u = cat_resp, params = cat_par, theta = bounds[k] - delta) }
       
   } # END for LOOP
   

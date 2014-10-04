@@ -1,18 +1,13 @@
-# p'' = a^2*((exp - exp^2)/(1 + exp)^3) = a*[1 - exp(a*(thet - b))]*q*pder1
-# (or alternatively: a^2*[p*q^2 - p^2*q])
+# p'' = a*[1 - exp(a*(thet - b.ku))]*q.ku*pder1.ku - a*[1 - exp(a*(thet - b.kl))]*q.kl*pder1.kl
 
 pder2.grm <-
-function(x, theta){
+function(theta, params){
   
-# If x is a vector: a and b.k are elements of that vector
-  if( is.null( dim(x) ) )    
-    { a <- x[ 1 ]; b.k <- x[ 2 ] }
-    
-# If x is a matrix: a and b are columns of that matrix
-  else
-    { a <- x[ , 1]; b.k <- x[ , 2] }
-    
- return( a * ( 1 - exp( a * (theta - b.k) ) ) * q.grm(x, theta) * pder1.grm(x, theta) )
-    
+# Call the appropriate c-function:
+  pder2 <- .Call("pder2grm", theta, params)
+  
+# Matrix of (n_ppl * n_cat) x n_it:
+  return(pder2)
+     
 } # END pder2.grm FUNCTION
 
