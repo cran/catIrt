@@ -151,7 +151,7 @@ van dr Linden, W. J. & Pashley, P. J.  (2010).  Item selection and ability estim
 }
 
 \author{
-Steven W. Nydick \email{nydic001@umn.edu}
+Steven W. Nydick \email{swnydick@gmail.com}
 }
 
 \note{
@@ -167,9 +167,8 @@ extend the interval until the end points of the (modified) range are opposite si
 }
 
 \seealso{
-\code{\link{catIrt}}, \code{\link[irtoys]{eap}},
-\code{\link{hessian}}, \code{\link[irtoys]{mlebme}},
-\code{\link{simIrt}}, \code{\link{uniroot}}
+\code{\link{catIrt}}, \code{\link{simIrt}},
+\code{\link[numDeriv]{hessian}}, \code{\link[stats]{uniroot}}
 }
 
 \examples{

@@ -1,7 +1,7 @@
 \name{catIrt-package}
 \alias{catIrt-package}
 \docType{package}
-\title{An R Package for Simulating Computerized Adaptive Tests (CATs)}
+\title{Simulate IRT-Based Computerized Adaptive Tests (CATs)}
 \description{
 \code{catIrt} provides methods for simulating Computerized Adaptive Tests,
 including response simulation, item selection methods, ability estimation methods,
@@ -22,5 +22,5 @@ LazyLoad: \tab yes\cr
 
 }
 \author{
-Maintainer: Steven W. Nydick \email{nydic001@umn.edu}
+Maintainer: Steven W. Nydick \email{swnydick@gmail.com}
 }
